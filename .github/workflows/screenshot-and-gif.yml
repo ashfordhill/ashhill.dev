@@ -24,25 +24,20 @@ jobs:
         run: |
           npm install
             
-      - name: Install screenshot and GIF tools
-        working-directory: ./ash-portfolio
-        run: |
-          npm install -g puppeteer gifski wait-on
-          mkdir -p images
-          
       - name: Build Next.js app
         working-directory: ./ash-portfolio
         run: npm run build
 
-      - name: Start Next.js app and take screenshot
+      - name: Start Next.js app
         working-directory: ./ash-portfolio
-        run: |
-          # Start the Next.js app in the background
-          npm run start &
-          
-          # Wait for the app to start
-          wait-on http://localhost:3000
-          node screenshot.js
+        run: npm run start &
+
+      - name: Take visual screenshot
+        uses: ashfordhill/puppeteer-action@v1
+        with:
+          url: 'http://localhost:3000'
+          folder: 'timeline'
+          basename: 'screenshot'
 
       - name: Commit screenshot
         working-directory: ./ash-portfolio

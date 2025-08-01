@@ -48,22 +48,9 @@ A React-based web application that visualizes various pathfinding algorithms. Th
 ## Taking Screenshots
 
 This repository includes a GitHub Actions workflow that automatically:
-- Runs the application
-- Takes screenshots using Puppeteer
-- Generates a GIF showing the progress over time
-- Updates this README with the latest GIF
-
-To manually take a screenshot locally:
-
-1. Install dependencies in the root directory:
-   ```bash
-   npm install
-   ```
-
-2. Run the screenshot script:
-   ```bash
-   npm run screenshot
-   ```
+[✅] Runs the application
+[✅] Takes screenshots using Puppeteer
+[] Generates a GIF showing the progress over time
 
 ## Pathfinder Progress
 
