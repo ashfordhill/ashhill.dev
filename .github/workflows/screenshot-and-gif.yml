@@ -38,6 +38,7 @@ jobs:
           
           # Wait for the app to start
           wait-on http://localhost:3000
+          sleep 15
           node screenshot.js
 
       - name: Commit screenshot
