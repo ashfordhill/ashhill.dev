@@ -29,16 +29,19 @@ jobs:
         run: |
           npm install -g puppeteer gifski wait-on
           mkdir -p images
-      
+          
+      - name: Build Next.js app
+        working-directory: ./ash-portfolio
+        run: npm run build
+
       - name: Start Next.js app and take screenshot
         working-directory: ./ash-portfolio
         run: |
           # Start the Next.js app in the background
-          npm run dev &
+          npm run start &
           
           # Wait for the app to start
           wait-on http://localhost:3000
-          sleep 15
           node screenshot.js
 
       - name: Commit screenshot
