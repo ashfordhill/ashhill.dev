@@ -34,10 +34,10 @@ jobs:
         run: |
           # Start the Next.js app in the background
           cd ash-portfolio
-          npm run start &
+          npm run dev &
           
           # Wait for the app to start
-          sleep 10
+          wait-on http://localhost:3000
 
       - name: Run Puppeteer to take screenshot
         working-directory: ./ash-portfolio
