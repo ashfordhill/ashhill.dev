@@ -1,3 +1,7 @@
+# Puppeteer Screenshot
+
+![Screenshot of UI screen](./ash-portfolio/screenshot.png)
+
 # Pathfinding Visualizer
 
 A React-based web application that visualizes various pathfinding algorithms. This project demonstrates how different algorithms like A*, BFS, DFS, and Dijkstra's algorithm find paths in a grid-based environment.
