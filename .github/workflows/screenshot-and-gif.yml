@@ -27,7 +27,7 @@ jobs:
       - name: Install screenshot and GIF tools
         run: |
           cd ash-portfolio
-          npm install -g puppeteer gifski
+          npm install -g puppeteer gifski wait-on
           mkdir -p images
       
       - name: Start Next.js app and take screenshot
