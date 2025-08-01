@@ -34,7 +34,7 @@ jobs:
         run: |
           # Start the Next.js app in the background
           cd ash-portfolio
-          npm run dev &
+          npm run start &
           
           # Wait for the app to start
           sleep 10
