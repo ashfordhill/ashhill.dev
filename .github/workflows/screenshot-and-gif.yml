@@ -1,20 +1,6 @@
 name: Screenshot and GIF Generator
 
-on:
-  # Run on push to main branch
-  push:
-    branches: [ main ]
-  
-  # Run on pull requests
-  pull_request:
-    branches: [ main ]
-  
-  # Allow manual triggering
-  workflow_dispatch:
-  
-  # Run on a schedule (once a day at midnight UTC)
-  schedule:
-    - cron: '0 0 * * *'
+on: [push, pull_request]
 
 jobs:
   screenshot-and-gif:
