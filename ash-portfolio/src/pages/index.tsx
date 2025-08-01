@@ -1,8 +1,8 @@
 import React from 'react';
-import Showcase from '../components/showcase/Showcase';
+import App from '../components/App';
 
 const Home: React.FC = () => {
-  return <Showcase />;
+  return <App />;
 };
 
 export default Home;

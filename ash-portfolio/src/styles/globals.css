@@ -1,4 +1,51 @@
-body {
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
   margin: 0;
-  font-family: 'Roboto', sans-serif;
+  padding: 0;
+  font-family: 'Space Mono', 'Roboto Mono', monospace;
+  overflow-x: hidden;
+}
+
+body {
+  background: #0B0B1A;
+  color: #E0AAFF;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(11, 11, 26, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(157, 78, 221, 0.6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 78, 221, 0.8);
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Custom selection colors */
+::selection {
+  background: rgba(157, 78, 221, 0.3);
+  color: #E0AAFF;
+}
+
+::-moz-selection {
+  background: rgba(157, 78, 221, 0.3);
+  color: #E0AAFF;
 }

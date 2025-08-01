@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper, Tooltip, Button, Select, MenuItem, FormControl } from '@mui/material';
+import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper, Tooltip, Button } from '@mui/material';
 import { SimulationEngine, SimulationMetrics } from './engine/SimulationEngine';
 import { Grid, GridPosition } from './data/Grid';
 import { Car } from './data/Car';
+import { useAppSelector } from '../../../store/hooks';
+import { colorPalettes } from '../../../store/slices/themeSlice';
 
 // Icons
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import StarIcon from '@mui/icons-material/Star';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
-import PaletteIcon from '@mui/icons-material/Palette';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 
@@ -17,51 +18,9 @@ const PathfinderVisualizer: React.FC = () => {
   // Engine instance
   const engineRef = useRef<SimulationEngine>(new SimulationEngine());
   
-  // Color palettes
-  const colorPalettes = {
-    cyberpunk: {
-      name: 'Cyberpunk',
-      background: '#0a0a0f',
-      primary: '#ff00ff',
-      secondary: '#00ffff',
-      accent: '#ffff00',
-      grid: '#1a1a2e',
-      obstacle: '#16213e',
-      car: '#00ffff',
-      destination: '#ff00ff',
-      spawn: '#ffff00',
-      border: '#ff00ff',
-      text: '#00ffff'
-    },
-    neon: {
-      name: 'Neon',
-      background: '#000814',
-      primary: '#ff006e',
-      secondary: '#8338ec',
-      accent: '#3a86ff',
-      grid: '#001d3d',
-      obstacle: '#003566',
-      car: '#ff006e',
-      destination: '#8338ec',
-      spawn: '#3a86ff',
-      border: '#ff006e',
-      text: '#ffffff'
-    },
-    matrix: {
-      name: 'Matrix',
-      background: '#000000',
-      primary: '#00ff00',
-      secondary: '#008f11',
-      accent: '#00ff41',
-      grid: '#001100',
-      obstacle: '#003300',
-      car: '#00ff00',
-      destination: '#00ff41',
-      spawn: '#008f11',
-      border: '#00ff00',
-      text: '#00ff00'
-    }
-  };
+  // Get current palette from Redux store
+  const currentPalette = useAppSelector((state) => state.theme.currentPalette);
+  const palette = colorPalettes[currentPalette];
 
   // UI state
   const [cars, setCars] = useState<Car[]>([]);
@@ -70,14 +29,11 @@ const PathfinderVisualizer: React.FC = () => {
   const [tool, setTool] = useState<string>('add');
   const [showMetrics, setShowMetrics] = useState<boolean>(false);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [currentPalette, setCurrentPalette] = useState<keyof typeof colorPalettes>('cyberpunk');
   const [metrics, setMetrics] = useState<SimulationMetrics>({
     totalTime: 0,
     avgTime: 0,
     shortestPath: 0
   });
-
-  const palette = colorPalettes[currentPalette];
 
   // Initialize the simulation
   useEffect(() => {
@@ -148,10 +104,7 @@ const PathfinderVisualizer: React.FC = () => {
     }
   };
 
-  // Handler for palette change
-  const handlePaletteChange = (newPalette: keyof typeof colorPalettes) => {
-    setCurrentPalette(newPalette);
-  };
+
 
   // Handler for clicking on a grid cell
   const handleCellClick = (position: GridPosition) => {
@@ -195,10 +148,10 @@ const PathfinderVisualizer: React.FC = () => {
           Array.from({ length: cols }).map((_, c) => {
             const position = { row: r, col: c };
             const key = `${r},${c}`;
-            let bgColor = palette.grid;
-            let borderColor = palette.border + '40';
-            let glowColor = 'transparent';
-            let cellContent = null;
+            let bgColor: string = palette.grid;
+            let borderColor: string = palette.border + '40';
+            let glowColor: string = 'transparent';
+            let cellContent: string | null = null;
             
             // Check if this cell is an obstacle
             if (grid.isObstacle(position)) {
@@ -269,80 +222,14 @@ const PathfinderVisualizer: React.FC = () => {
 
   return (
     <Box sx={{ 
-      minHeight: '100vh',
+      minHeight: '70vh',
       backgroundColor: palette.background,
       color: palette.text,
       fontFamily: 'monospace',
       overflow: 'hidden'
     }}>
-      {/* Top Header Bar */}
-      <Box sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        p: 2,
-        borderBottom: `2px solid ${palette.border}`,
-        background: `linear-gradient(90deg, ${palette.background} 0%, ${palette.primary}20 50%, ${palette.background} 100%)`,
-        boxShadow: `0 2px 10px ${palette.border}40`
-      }}>
-        {/* Left side - Navigation */}
-        <Box sx={{ display: 'flex', gap: 3 }}>
-          <Typography variant="h4" sx={{ 
-            color: palette.primary, 
-            fontWeight: 'bold',
-            textShadow: `0 0 10px ${palette.primary}80`,
-            fontFamily: 'monospace'
-          }}>
-            ABOUT
-          </Typography>
-          <Typography variant="h4" sx={{ 
-            color: palette.secondary, 
-            fontWeight: 'bold',
-            textShadow: `0 0 10px ${palette.secondary}80`,
-            fontFamily: 'monospace'
-          }}>
-            SHOWCASE
-          </Typography>
-        </Box>
-
-        {/* Right side - Controls */}
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          {/* Palette Selector */}
-          <FormControl size="small">
-            <Select
-              value={currentPalette}
-              onChange={(e) => handlePaletteChange(e.target.value as keyof typeof colorPalettes)}
-              sx={{
-                color: palette.text,
-                border: `1px solid ${palette.border}`,
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: palette.border,
-                },
-                '& .MuiSvgIcon-root': {
-                  color: palette.text,
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: palette.primary,
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: palette.primary,
-                }
-              }}
-            >
-              {Object.entries(colorPalettes).map(([key, pal]) => (
-                <MenuItem key={key} value={key} sx={{ color: palette.text, backgroundColor: palette.background }}>
-                  {pal.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          
-          <PaletteIcon sx={{ color: palette.primary, fontSize: '2rem' }} />
-        </Box>
-      </Box>
-
       {/* Main Content Area */}
-      <Box sx={{ display: 'flex', height: 'calc(100vh - 80px)' }}>
+      <Box sx={{ display: 'flex', height: '70vh' }}>
         {/* Left Sidebar - Controls and Metrics */}
         <Box sx={{
           width: '300px',
