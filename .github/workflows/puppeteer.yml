@@ -1,9 +1,10 @@
-name: Screenshot and GIF Generator
+name: Screenshot and generate video
+description: Take screenshots and generate a video of the Next.js app using Puppeteer
 
 on: [push, pull_request]
 
 jobs:
-  screenshot-and-gif:
+  screenshot:
     runs-on: ubuntu-latest
     
     steps:
@@ -33,7 +34,7 @@ jobs:
         run: npm run start &
 
       - name: Take visual records of current app
-        uses: ashfordhill/puppeteer-action@main
+        uses: ashfordhill/puppeteer-action@v1
         with:
           url: 'http://localhost:3000'
           folder: 'timeline'
