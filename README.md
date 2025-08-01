@@ -1,28 +1,14 @@
-# Puppeteer Screenshot
+# Status
 
-![Screenshot of UI screen](./ash-portfolio/screenshot.png)
+Using my Puppeteer GitHub Action.
 
-# Pathfinding Visualizer
+![Progress](./timeline/timeline.mp4)
 
-A React-based web application that visualizes various pathfinding algorithms. This project demonstrates how different algorithms like A*, BFS, DFS, and Dijkstra's algorithm find paths in a grid-based environment.
+![Latest Screenshot](./timeline/screenshot-latest.png)
 
-## Features
+# Showcase
 
-- Interactive grid where you can add and remove obstacles
-- Multiple pathfinding algorithms:
-  - Breadth-First Search (BFS)
-  - A* Search
-  - Depth-First Search (DFS)
-  - Dijkstra's Algorithm
-- Real-time visualization of algorithm execution
-- Performance metrics for comparing algorithms
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v16 or higher)
-- npm or yarn
+## Pathfinder
 
 ### Installation
 
@@ -43,15 +29,4 @@ A React-based web application that visualizes various pathfinding algorithms. Th
    npm run dev
    ```
 
-4. Open your browser and navigate to `http://localhost:3000`
-
-## Taking Screenshots
-
-This repository includes a GitHub Actions workflow that automatically:
-[✅] Runs the application
-[✅] Takes screenshots using Puppeteer
-[] Generates a GIF showing the progress over time
-
-## Pathfinder Progress
-
-![Pathfinder Progress](images/pathfinder-progress.gif)
+4. Open browser and navigate to `http://localhost:3000`
