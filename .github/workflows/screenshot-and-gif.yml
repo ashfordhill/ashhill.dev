@@ -20,28 +20,24 @@ jobs:
           cache-dependency-path: ash-portfolio/package-lock.json
       
       - name: Install dependencies
+        working-directory: ./ash-portfolio
         run: |
-          cd ash-portfolio
-          npm ci
+          npm install
             
       - name: Install screenshot and GIF tools
+        working-directory: ./ash-portfolio
         run: |
-          cd ash-portfolio
           npm install -g puppeteer gifski wait-on
           mkdir -p images
       
       - name: Start Next.js app and take screenshot
+        working-directory: ./ash-portfolio
         run: |
           # Start the Next.js app in the background
-          cd ash-portfolio
           npm run dev &
           
           # Wait for the app to start
           wait-on http://localhost:3000
-
-      - name: Run Puppeteer to take screenshot
-        working-directory: ./ash-portfolio
-        run: |
           node screenshot.js
 
       - name: Commit screenshot
