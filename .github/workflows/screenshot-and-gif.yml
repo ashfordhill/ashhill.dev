@@ -10,7 +10,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history for proper timestamps
+          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -32,12 +32,16 @@ jobs:
         working-directory: ./ash-portfolio
         run: npm run start &
 
-      - name: Take visual screenshot
-        uses: ashfordhill/puppeteer-action@v0.0.2
+      - name: Take visual records of current app
+        uses: ashfordhill/puppeteer-action@main
         with:
           url: 'http://localhost:3000'
           folder: 'timeline'
           basename: 'screenshot'
+          make_video: 'true'
+          video_name: timeline.mp4
+          frame_duration: '1'
+          scale_width: '640'
 
       - name: Commit screenshot
         working-directory: ./ash-portfolio
