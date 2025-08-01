@@ -8,7 +8,8 @@ const puppeteer = require('puppeteer');
       ]});
   const page = await browser.newPage();
   await page.goto('http://localhost:3000', { waitUntil: 'networkidle2' });
-  const fileName = `screenshot_${Date.now().toString()}.png`;
-  await page.screenshot({ path: fileName });
+  const folder = "visual-history"
+  const file = `screenshot_${Date.now().toString()}.png`;
+  await page.screenshot({ path: `${folder}/${file}` });
   await browser.close();
 })();
