@@ -33,7 +33,7 @@ jobs:
         run: npm run start &
 
       - name: Take visual screenshot
-        uses: ashfordhill/puppeteer-action@v0.0.1
+        uses: ashfordhill/puppeteer-action@v0.0.2
         with:
           url: 'http://localhost:3000'
           folder: 'timeline'
