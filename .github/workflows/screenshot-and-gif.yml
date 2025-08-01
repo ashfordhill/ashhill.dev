@@ -33,12 +33,15 @@ jobs:
         run: npm run start &
 
       - name: Take visual screenshot
-        uses: ashfordhill/puppeteer-action@v0.0.2
+        uses: ashfordhill/puppeteer-action@v0.0.3
         with:
           url: 'http://localhost:3000'
           folder: 'timeline'
           basename: 'screenshot'
-
+          make_video: 'true'
+          video_name: timeline.mp4
+          frame_duration: '1'
+          scale_width: '640'
       - name: Commit screenshot
         working-directory: ./ash-portfolio
         env:
