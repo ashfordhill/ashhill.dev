@@ -35,7 +35,7 @@ jobs:
       - name: Take visual records of current app
         uses: ashfordhill/puppeteer-action@main
         with:
-          url: 'http://host.docker.internal:3000'
+          url: 'http://localhost:3000'
           folder: 'timeline'
           basename: 'screenshot'
           make_video: 'true'
