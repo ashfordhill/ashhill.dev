@@ -46,33 +46,45 @@ const TopNavigation: React.FC = () => {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      p: 3,
-      borderBottom: `3px solid ${palette.border}`,
+      p: { xs: 2, sm: 2.5, md: 3 },
+      mb: { xs: 1, sm: 2 },
+      borderRadius: '12px',
+      border: `2px solid ${palette.border}60`,
       background: `
-        linear-gradient(135deg, ${palette.background}E6 0%, ${palette.primary}15 25%, ${palette.secondary}10 50%, ${palette.primary}15 75%, ${palette.background}E6 100%),
-        linear-gradient(90deg, transparent 0%, ${palette.border}20 50%, transparent 100%)
+        linear-gradient(135deg, ${palette.background}F0 0%, ${palette.primary}08 25%, ${palette.secondary}06 50%, ${palette.primary}08 75%, ${palette.background}F0 100%)
       `,
       boxShadow: `
-        0 4px 20px ${palette.border}60,
-        inset 0 1px 0 ${palette.primary}40,
-        inset 0 -1px 0 ${palette.secondary}40
+        0 2px 15px ${palette.border}30,
+        inset 0 1px 0 ${palette.primary}20,
+        inset 0 -1px 0 ${palette.secondary}20
       `,
       position: 'relative',
       zIndex: 1000,
-      backdropFilter: 'blur(10px)',
+      backdropFilter: 'blur(8px)',
+      // Cyberpunk corner accents
       '&::before': {
         content: '""',
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `
-          radial-gradient(circle at 20% 50%, ${palette.primary}10 0%, transparent 50%),
-          radial-gradient(circle at 80% 50%, ${palette.secondary}10 0%, transparent 50%)
-        `,
-        pointerEvents: 'none',
-        zIndex: -1,
+        top: '8px',
+        left: '8px',
+        width: '20px',
+        height: '20px',
+        border: `2px solid ${palette.primary}80`,
+        borderRight: 'none',
+        borderBottom: 'none',
+        borderRadius: '4px 0 0 0',
+      },
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        bottom: '8px',
+        right: '8px',
+        width: '20px',
+        height: '20px',
+        border: `2px solid ${palette.secondary}80`,
+        borderLeft: 'none',
+        borderTop: 'none',
+        borderRadius: '0 0 4px 0',
       }
     }}>
       {/* Left side - Navigation */}
@@ -84,45 +96,30 @@ const TopNavigation: React.FC = () => {
             sx={{
               color: currentSection === item.key ? palette.primary : palette.text,
               fontWeight: 'bold',
-              fontSize: '1.3rem',
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
               textShadow: currentSection === item.key 
-                ? `0 0 15px ${palette.primary}` 
-                : `0 0 8px ${palette.text}40`,
+                ? `0 0 8px ${palette.primary}60` 
+                : `0 0 4px ${palette.text}30`,
               fontFamily: 'monospace',
               textTransform: 'uppercase',
-              letterSpacing: '2px',
-              px: 3,
-              py: 1.5,
+              letterSpacing: '1px',
+              px: { xs: 2, sm: 2.5, md: 3 },
+              py: { xs: 1, sm: 1.2, md: 1.5 },
               border: currentSection === item.key 
-                ? `2px solid ${palette.primary}80` 
+                ? `2px solid ${palette.primary}60` 
                 : `2px solid transparent`,
-              borderRadius: '12px',
+              borderRadius: '8px',
               background: currentSection === item.key 
-                ? `linear-gradient(135deg, ${palette.primary}20 0%, ${palette.secondary}10 100%)`
+                ? `linear-gradient(135deg, ${palette.primary}15 0%, ${palette.secondary}08 100%)`
                 : 'transparent',
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: '-100%',
-                width: '100%',
-                height: '100%',
-                background: `linear-gradient(90deg, transparent, ${palette.primary}40, transparent)`,
-                transition: 'left 0.6s ease',
-              },
+              transition: 'all 0.3s ease',
               '&:hover': {
                 color: palette.primary,
-                textShadow: `0 0 20px ${palette.primary}`,
-                transform: 'translateY(-2px) scale(1.05)',
-                borderColor: palette.primary,
-                background: `linear-gradient(135deg, ${palette.primary}30 0%, ${palette.secondary}20 100%)`,
-                boxShadow: `0 8px 25px ${palette.primary}40`,
-                '&::before': {
-                  left: '100%',
-                }
+                textShadow: `0 0 10px ${palette.primary}80`,
+                transform: 'translateY(-1px)',
+                borderColor: palette.primary + '80',
+                background: `linear-gradient(135deg, ${palette.primary}20 0%, ${palette.secondary}12 100%)`,
+                boxShadow: `0 4px 15px ${palette.primary}25`,
               }
             }}
           >
@@ -140,19 +137,19 @@ const TopNavigation: React.FC = () => {
             color: palette.primary,
             fontFamily: 'monospace',
             fontWeight: 'bold',
-            fontSize: '1.1rem',
+            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
             textTransform: 'uppercase',
-            border: `2px solid ${palette.primary}40`,
+            border: `2px solid ${palette.primary}50`,
             borderRadius: '8px',
-            px: 2,
-            py: 1,
-            textShadow: `0 0 8px ${palette.primary}60`,
+            px: { xs: 1.5, sm: 2 },
+            py: { xs: 0.8, sm: 1 },
+            textShadow: `0 0 5px ${palette.primary}40`,
             '&:hover': {
               color: palette.accent,
-              borderColor: palette.accent,
-              backgroundColor: palette.accent + '10',
-              transform: 'scale(1.05)',
-              boxShadow: `0 0 15px ${palette.accent}60`
+              borderColor: palette.accent + '80',
+              backgroundColor: palette.accent + '08',
+              transform: 'translateY(-1px)',
+              boxShadow: `0 2px 10px ${palette.accent}30`
             }
           }}
         >

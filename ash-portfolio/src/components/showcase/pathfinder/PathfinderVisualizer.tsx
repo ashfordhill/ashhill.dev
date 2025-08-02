@@ -128,7 +128,13 @@ const PathfinderVisualizer: React.FC = () => {
     const grid = engineRef.current.getState().grid; // Always get fresh grid from engine
     const rows = grid.rows;
     const cols = grid.cols;
-    const cellSize = 12; // Smaller cells for more retro feel
+    
+    // Calculate responsive cell size based on available space
+    const maxWidth = typeof window !== 'undefined' ? window.innerWidth * 0.6 : 800; // 60% of screen width for grid
+    const maxHeight = typeof window !== 'undefined' ? window.innerHeight * 0.6 : 600; // 60% of screen height for grid
+    const cellSizeByWidth = Math.floor((maxWidth - 20) / cols); // Account for padding
+    const cellSizeByHeight = Math.floor((maxHeight - 20) / rows);
+    const cellSize = Math.max(6, Math.min(12, Math.min(cellSizeByWidth, cellSizeByHeight)));
     
     return (
       <Box 
@@ -138,10 +144,33 @@ const PathfinderVisualizer: React.FC = () => {
           gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
           gap: '1px',
           backgroundColor: palette.background,
-          border: `2px solid ${palette.border}`,
+          border: `2px solid ${palette.border}80`,
           borderRadius: '4px',
-          padding: '8px',
-          boxShadow: `0 0 20px ${palette.border}40`,
+          padding: { xs: '4px', sm: '6px' },
+          boxShadow: `
+            0 0 10px ${palette.border}20,
+            inset 0 0 20px ${palette.primary}05
+          `,
+          position: 'relative',
+          // Retro CRT effect
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `
+              repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                ${palette.primary}03 2px,
+                ${palette.primary}03 4px
+              )
+            `,
+            pointerEvents: 'none',
+          }
         }}
       >
         {Array.from({ length: rows }).map((_, r) =>
@@ -162,16 +191,16 @@ const PathfinderVisualizer: React.FC = () => {
             // Check if this cell is a spawn point
             if (grid.isSpawnPoint(position)) {
               bgColor = palette.spawn + '40';
-              borderColor = palette.spawn;
-              glowColor = palette.spawn + '60';
+              borderColor = palette.spawn + '80';
+              glowColor = palette.spawn + '30';
               cellContent = '◆';
             }
             
             // Check if this cell is the destination
             if (grid.isDestination(position)) {
               bgColor = palette.destination + '40';
-              borderColor = palette.destination;
-              glowColor = palette.destination + '60';
+              borderColor = palette.destination + '80';
+              glowColor = palette.destination + '30';
               cellContent = '★';
             }
             
@@ -182,8 +211,8 @@ const PathfinderVisualizer: React.FC = () => {
             
             if (carHere) {
               bgColor = palette.car + '80';
-              borderColor = palette.car;
-              glowColor = palette.car + '60';
+              borderColor = palette.car + '80';
+              glowColor = palette.car + '30';
               cellContent = '●';
             }
             
@@ -204,10 +233,10 @@ const PathfinderVisualizer: React.FC = () => {
                   color: palette.text,
                   fontWeight: 'bold',
                   transition: 'all 0.1s ease',
-                  boxShadow: glowColor !== 'transparent' ? `0 0 4px ${glowColor}` : 'none',
+                  boxShadow: glowColor !== 'transparent' ? `0 0 2px ${glowColor}` : 'none',
                   '&:hover': {
-                    backgroundColor: showMetrics ? bgColor : palette.primary + '20',
-                    boxShadow: showMetrics ? (glowColor !== 'transparent' ? `0 0 4px ${glowColor}` : 'none') : `0 0 6px ${palette.primary}60`,
+                    backgroundColor: showMetrics ? bgColor : palette.primary + '15',
+                    boxShadow: showMetrics ? (glowColor !== 'transparent' ? `0 0 2px ${glowColor}` : 'none') : `0 0 3px ${palette.primary}40`,
                   }
                 }}
               >
@@ -222,35 +251,48 @@ const PathfinderVisualizer: React.FC = () => {
 
   return (
     <Box sx={{ 
-      minHeight: '70vh',
+      height: '100%',
       backgroundColor: palette.background,
       color: palette.text,
       fontFamily: 'monospace',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+      zIndex: 2,
     }}>
       {/* Main Content Area */}
-      <Box sx={{ display: 'flex', height: '70vh' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flex: 1,
+        height: '100%'
+      }}>
         {/* Left Sidebar - Controls and Metrics */}
         <Box sx={{
-          width: '300px',
-          p: 3,
-          borderRight: `2px solid ${palette.border}`,
+          width: { xs: '240px', sm: '260px', md: '280px' },
+          p: { xs: 1.5, sm: 2, md: 2.5 },
+          borderRight: `2px solid ${palette.border}80`,
           backgroundColor: palette.background,
-          boxShadow: `2px 0 10px ${palette.border}40`
+          boxShadow: `2px 0 8px ${palette.border}25`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: { xs: 1.5, sm: 2, md: 2.5 },
+          overflow: 'hidden'
         }}>
           {/* Algorithm Section */}
           <Box sx={{
-            border: `2px solid ${palette.border}`,
+            border: `2px solid ${palette.border}80`,
             borderRadius: '8px',
-            p: 2,
-            mb: 3,
-            boxShadow: `0 0 15px ${palette.border}40`
+            p: { xs: 1, sm: 1.5 },
+            boxShadow: `0 0 8px ${palette.border}25`,
+            flex: '0 0 auto'
           }}>
             <Typography variant="h6" sx={{ 
               color: palette.secondary, 
               mb: 2, 
               fontFamily: 'monospace',
-              textShadow: `0 0 5px ${palette.secondary}80`
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+              textShadow: `0 0 3px ${palette.secondary}60`
             }}>
               ALGORITHM
             </Typography>
@@ -282,17 +324,18 @@ const PathfinderVisualizer: React.FC = () => {
 
           {/* Controls Section */}
           <Box sx={{
-            border: `2px solid ${palette.border}`,
+            border: `2px solid ${palette.border}80`,
             borderRadius: '8px',
-            p: 2,
-            mb: 3,
-            boxShadow: `0 0 15px ${palette.border}40`
+            p: { xs: 1, sm: 1.5 },
+            boxShadow: `0 0 8px ${palette.border}25`,
+            flex: '0 0 auto'
           }}>
             <Typography variant="h6" sx={{ 
               color: palette.secondary, 
               mb: 2, 
               fontFamily: 'monospace',
-              textShadow: `0 0 5px ${palette.secondary}80`
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+              textShadow: `0 0 3px ${palette.secondary}60`
             }}>
               CONTROLS
             </Typography>
@@ -363,16 +406,19 @@ const PathfinderVisualizer: React.FC = () => {
 
           {/* Metrics Section */}
           <Box sx={{
-            border: `2px solid ${palette.border}`,
+            border: `2px solid ${palette.border}80`,
             borderRadius: '8px',
-            p: 2,
-            boxShadow: `0 0 15px ${palette.border}40`
+            p: { xs: 1, sm: 1.5 },
+            boxShadow: `0 0 8px ${palette.border}25`,
+            flex: '1 1 auto',
+            minHeight: 0
           }}>
             <Typography variant="h6" sx={{ 
               color: palette.secondary, 
               mb: 2, 
               fontFamily: 'monospace',
-              textShadow: `0 0 5px ${palette.secondary}80`
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+              textShadow: `0 0 3px ${palette.secondary}60`
             }}>
               METRICS
             </Typography>
@@ -408,10 +454,20 @@ const PathfinderVisualizer: React.FC = () => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          p: 3,
-          backgroundColor: palette.background
+          p: { xs: 1, sm: 1.5, md: 2 },
+          backgroundColor: palette.background,
+          overflow: 'hidden',
+          position: 'relative'
         }}>
-          {renderGrid()}
+          <Box sx={{
+            maxWidth: '100%',
+            maxHeight: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            {renderGrid()}
+          </Box>
         </Box>
       </Box>
 

@@ -1,9 +1,11 @@
 # Status
 
-Using my Puppeteer GitHub Action.
+Using my [Puppeteer GitHub Action](https://github.com/ashfordhill/puppeteer-action)
 
-![Progress](./timeline/timeline.mp4)
+Timelapse of Main:
 
+
+Latest Screenshot (branch-specific)
 ![Latest Screenshot](./timeline/screenshot-latest.png)
 
 # Showcase
