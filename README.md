@@ -1,10 +1,16 @@
 # Status
 
-Using my [Puppeteer GitHub Action](https://github.com/ashfordhill/puppeteer-action)
+Using my [Puppeteer GitHub Action](https://github.com/ashfordhill/puppeteer-action).
 
-Main:
+Experimenting with Zencoder.
 
-<video width="630" height="300" src="https://github.com/ashfordhill/ashhill.dev/blob/main/timeline/timeline.mp4"></video>
+### Latest View
+
+![](./timeline/screenshot-latest.png)
+
+### History
+
+![](./timeline/timeline.gif)
 
 # Showcase
 

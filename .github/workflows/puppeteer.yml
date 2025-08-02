@@ -1,7 +1,10 @@
 name: Screenshot and generate video
 description: Take screenshots and generate a video of the Next.js app using Puppeteer
 
-on: [push, pull_request]
+on: 
+  push:
+  # Trigger being able to do a manual fresh build on the GitHub UI (?)
+  workflow_dispatch:
 
 jobs:
   screenshot:
@@ -33,71 +36,19 @@ jobs:
         working-directory: ./ash-portfolio
         run: npm run start &
 
-      - name: Take visual records of current app
-        uses: ashfordhill/puppeteer-action@v3
+      - name: Take visual records (GIF)
+        id: capture
+        uses: ashfordhill/puppeteer-action@main
         with:
           url: 'http://localhost:3000'
           folder: 'timeline'
           basename: 'screenshot'
-          make_video: 'true'
-          video_name: timeline.mp4
-          frame_duration: '1'
+          make_gif: 'true'
+          gif_name: 'timeline.gif'
+          frame_duration: '2'   # seconds per frame (1 = 1 fps). Use 0.083 for ~12 fps.
           scale_width: '640'
 
-      - name: Upload/overwrite video in fixed release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VIDEO_PATH: timeline/timeline.mp4
-          RELEASE_TAG: video-asset
-          RELEASE_NAME: "README Video Asset"
-          ASSET_NAME: timeline.mp4
-        run: |
-          set -e
-      
-          # Look up release by tag
-          RELEASE_ID=$(curl -s \
-            -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" \
-            | jq -r .id)
-      
-          if [ "$RELEASE_ID" = "null" ]; then
-            echo "Release not found, creating one..."
-            RELEASE_ID=$(curl -s \
-              -H "Authorization: token $GH_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "{\"tag_name\": \"$RELEASE_TAG\", \"name\": \"$RELEASE_NAME\", \"draft\": true}" \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
-              | jq -r .id)
-          fi
-      
-          # Delete existing asset with the same name (if exists)
-          ASSET_ID=$(curl -s \
-            -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets" \
-            | jq -r ".[] | select(.name==\"$ASSET_NAME\") | .id")
-      
-          if [ -n "$ASSET_ID" ]; then
-            echo "Deleting old asset..."
-            curl -s -X DELETE \
-              -H "Authorization: token $GH_TOKEN" \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/assets/${ASSET_ID}"
-          fi
-      
-          echo "Uploading new asset..."
-          UPLOAD_RESPONSE=$(curl -s \
-            -H "Authorization: token $GH_TOKEN" \
-            -H "Content-Type: video/mp4" \
-            --data-binary @"$VIDEO_PATH" \
-            "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=${ASSET_NAME}")
-      
-          ASSET_URL=$(echo "$UPLOAD_RESPONSE" | jq -r .browser_download_url)
-      
-          echo "✅ Video uploaded to: $ASSET_URL"
-          echo ""
-          echo "📌 Use this in your README:"
-          echo "<video src=\"$ASSET_URL\" controls></video>"
-
-      - name: Commit screenshot
+      - name: Commit visual records
         working-directory: ./ash-portfolio
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -105,5 +56,5 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           git add -A
-          git commit -m "[ACTION] Add screenshots"
+          git commit -m "[ACTION] Update visual records"
           git push origin HEAD:${{ github.ref }}
