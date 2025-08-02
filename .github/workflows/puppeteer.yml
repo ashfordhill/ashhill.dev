@@ -33,57 +33,19 @@ jobs:
         working-directory: ./ash-portfolio
         run: npm run start &
 
-      - name: Take visual records of current app
+      - name: Take visual records (GIF)
+        id: capture
         uses: ashfordhill/puppeteer-action@main
         with:
           url: 'http://localhost:3000'
           folder: 'timeline'
           basename: 'screenshot'
-          make_video: 'true'
-          video_name: timeline.mp4
-          frame_duration: '1'
+          make_gif: 'true'
+          gif_name: 'timeline.gif'
+          frame_duration: '2'   # seconds per frame (1 = 1 fps). Use 0.083 for ~12 fps.
           scale_width: '640'
 
-      - name: Upload .mp4 to user-images and update README
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VIDEO_PATH: timeline/timeline.mp4
-          ISSUE_NUMBER: 1  # <-- create a scratch issue in your repo and set this
-        run: |
-          set -e
-
-          echo "Uploading video to user-images..."
-          # Step 1: Upload as if dragged into an issue comment
-          RESPONSE=$(curl -s \
-            -X POST \
-            -H "Authorization: token $GH_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -F "name=$(basename $VIDEO_PATH)" \
-            -F "file=@$VIDEO_PATH" \
-            "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
-
-          # Step 2: Extract the CDN URL
-          VIDEO_URL=$(echo "$RESPONSE" | grep -Eo 'https://user-images.githubusercontent.com[^)"]+')
-
-          if [ -z "$VIDEO_URL" ]; then
-            echo "❌ Failed to extract user-images URL"
-            echo "$RESPONSE"
-            exit 1
-          fi
-
-          echo "✅ Video uploaded: $VIDEO_URL"
-
-          # Step 3: Update README.md placeholder only if changed
-          README_FILE="README.md"
-          if grep -q "$VIDEO_URL" "$README_FILE"; then
-            echo "No change in video URL, skipping commit."
-            exit 0
-          fi
-
-          sed -i "s|<!--VIDEO-->.*<!--/VIDEO-->|<!--VIDEO--><video src=\"$VIDEO_URL\" controls></video><!--/VIDEO-->|" "$README_FILE"
-
-
-      - name: Commit screenshot
+      - name: Commit visual records
         working-directory: ./ash-portfolio
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -91,5 +53,5 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           git add -A
-          git commit -m "[ACTION] Update timeline"
+          git commit -m "[ACTION] Update visual records"
           git push origin HEAD:${{ github.ref }}
