@@ -1,0 +1,12 @@
+{
+  "name": "pathfinding-visualizer",
+  "version": "1.0.0",
+  "description": "A visualization tool for pathfinding algorithms",
+  "scripts": {
+    "screenshot": "node scripts/take-screenshot.js",
+    "install-gifski": "node scripts/install-gifski.js"
+  },
+  "devDependencies": {
+    "puppeteer": "^21.0.0"
+  }
+}

@@ -1,0 +1,56 @@
+name: Screenshot and generate video
+description: Take screenshots and generate a video of the Next.js app using Puppeteer
+
+on: [push, pull_request]
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: ash-portfolio/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./ash-portfolio
+        run: |
+          npm install
+            
+      - name: Build Next.js app
+        working-directory: ./ash-portfolio
+        run: npm run build
+
+      - name: Start Next.js app
+        working-directory: ./ash-portfolio
+        run: npm run start &
+
+      - name: Take visual records of current app
+        uses: ashfordhill/puppeteer-action@v1
+        with:
+          url: 'http://localhost:3000'
+          folder: 'timeline'
+          basename: 'screenshot'
+          make_video: 'true'
+          video_name: timeline.mp4
+          frame_duration: '1'
+          scale_width: '640'
+
+      - name: Commit screenshot
+        working-directory: ./ash-portfolio
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add -A
+          git commit -m "[ACTION] Add screenshots"
+          git push origin HEAD:${{ github.ref }}
