@@ -1,6 +1,7 @@
 name = "portfolio"
-main = ".vercel/output/functions/[[path]].func/index.js"
+main = ".vercel/output/static/_worker.js/index.js"
 compatibility_date = "2025-08-02"
+
 [site]
 bucket = ".vercel/output/static"
 
