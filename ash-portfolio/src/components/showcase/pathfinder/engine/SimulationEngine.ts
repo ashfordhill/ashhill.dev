@@ -3,10 +3,13 @@ import { Car, CarManager, Path } from '../data/Car';
 import { Algorithm } from '../algorithms/algorithm';
 import { BFSAlgorithm } from '../algorithms/bfs';
 import { AStarAlgorithm } from '../algorithms/aStar';
+import { DFSAlgorithm } from '../algorithms/dfs';
+import { DijkstraAlgorithm } from '../algorithms/dijkstra';
 
-// Constants
-const TOTAL_CARS = 100;
-const TICK_INTERVAL = 100; // ms
+// Constants - optimized for better performance
+const TOTAL_CARS = 20;
+const TICK_INTERVAL = 200; // ms - slower for better visibility
+const ANIMATION_INTERVAL = 33; // ~30fps for better performance
 
 export interface SimulationMetrics {
   totalTime: number;
@@ -22,7 +25,9 @@ export class SimulationEngine {
   
   private tickCount: number = 0;
   private intervalId: NodeJS.Timeout | null = null;
+  private animationId: NodeJS.Timeout | null = null;
   private isRunning: boolean = false;
+  private lastAnimationTime: number = 0;
   
   // Callbacks
   private onTick: () => void = () => {};
@@ -35,7 +40,9 @@ export class SimulationEngine {
     // Initialize available algorithms
     this.algorithms = new Map();
     this.algorithms.set('BFS', new BFSAlgorithm());
+    this.algorithms.set('DFS', new DFSAlgorithm());
     this.algorithms.set('A*', new AStarAlgorithm());
+    this.algorithms.set('Dijkstra', new DijkstraAlgorithm());
     
     // Default algorithm
     this.algorithm = this.algorithms.get('BFS')!;
@@ -78,12 +85,16 @@ export class SimulationEngine {
     this.tickCount = 0;
     this.carManager.reset();
     this.isRunning = true;
+    this.lastAnimationTime = Date.now();
     
     // Spawn initial cars at all spawn points
     this.spawnInitialCars();
     
     // Start the simulation loop
     this.intervalId = setInterval(() => this.tick(), TICK_INTERVAL);
+    
+    // Start the animation loop for smooth interpolation
+    this.animationId = setInterval(() => this.animate(), ANIMATION_INTERVAL);
   }
   
   // Stop the simulation
@@ -91,6 +102,10 @@ export class SimulationEngine {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
+    }
+    if (this.animationId) {
+      clearInterval(this.animationId);
+      this.animationId = null;
     }
     this.isRunning = false;
   }
@@ -114,6 +129,27 @@ export class SimulationEngine {
   public removeObstacle(position: GridPosition): void {
     this.grid.removeObstacle(position);
   }
+
+  // Reset obstacles to predefined pattern
+  public resetObstacles(): void {
+    this.grid.resetToPredefinedObstacles();
+  }
+
+  // Animation loop for smooth car interpolation
+  private animate(): void {
+    const currentTime = Date.now();
+    const deltaTime = (currentTime - this.lastAnimationTime) / 1000; // Convert to seconds
+    this.lastAnimationTime = currentTime;
+
+    // Update car interpolation
+    const cars = this.carManager.getCars();
+    for (const car of cars) {
+      this.carManager.updateCarInterpolation(car, deltaTime);
+    }
+
+    // Trigger UI update
+    this.onTick();
+  }
   
   // Find a path using the current algorithm
   private findPath(start: [number, number], goal: [number, number]): Path | null {
@@ -124,17 +160,17 @@ export class SimulationEngine {
     );
   }
   
-  // Spawn initial cars at all spawn points
+  // Spawn initial cars at spawn points (one at a time)
   private spawnInitialCars(): void {
-    for (const spawnPoint of this.grid.spawnPoints) {
-      if (this.carManager.getSpawnedCount() < this.carManager.getTotalCars()) {
-        const path = this.findPath(
-          [spawnPoint.row, spawnPoint.col],
-          [this.grid.destination.row, this.grid.destination.col]
-        );
-        
-        this.carManager.createCar(spawnPoint, path || [[spawnPoint.row, spawnPoint.col]], 0);
-      }
+    // Only spawn one car initially to avoid congestion
+    if (this.carManager.getSpawnedCount() < 1) {
+      const spawnPoint = this.grid.spawnPoints[0];
+      const path = this.findPath(
+        [spawnPoint.row, spawnPoint.col],
+        [this.grid.destination.row, this.grid.destination.col]
+      );
+      
+      this.carManager.createCar(spawnPoint, path || [[spawnPoint.row, spawnPoint.col]], 0);
     }
   }
   
@@ -222,23 +258,26 @@ export class SimulationEngine {
     }
   }
   
-  // Spawn new cars at available spawn points
+  // Spawn new cars at available spawn points (controlled rate)
   private spawnNewCars(occupiedPositions: Set<string>): void {
     if (this.carManager.getSpawnedCount() < this.carManager.getTotalCars()) {
-      for (const spawnPoint of this.grid.spawnPoints) {
-        if (this.carManager.getSpawnedCount() >= this.carManager.getTotalCars()) {
-          break;
-        }
+      // Only spawn a new car every 10 ticks to avoid congestion
+      if (this.tickCount % 10 === 0) {
+        // Try to spawn at a random available spawn point
+        const availableSpawnPoints = this.grid.spawnPoints.filter(spawnPoint => {
+          const spawnPointKey = `${spawnPoint.row},${spawnPoint.col}`;
+          return !occupiedPositions.has(spawnPointKey);
+        });
         
-        const spawnPointKey = `${spawnPoint.row},${spawnPoint.col}`;
-        if (!occupiedPositions.has(spawnPointKey)) {
+        if (availableSpawnPoints.length > 0) {
+          const randomSpawnPoint = availableSpawnPoints[Math.floor(Math.random() * availableSpawnPoints.length)];
           const path = this.findPath(
-            [spawnPoint.row, spawnPoint.col],
+            [randomSpawnPoint.row, randomSpawnPoint.col],
             [this.grid.destination.row, this.grid.destination.col]
           );
           
-          this.carManager.createCar(spawnPoint, path || [[spawnPoint.row, spawnPoint.col]], this.tickCount);
-          occupiedPositions.add(spawnPointKey);
+          this.carManager.createCar(randomSpawnPoint, path || [[randomSpawnPoint.row, randomSpawnPoint.col]], this.tickCount);
+          occupiedPositions.add(`${randomSpawnPoint.row},${randomSpawnPoint.col}`);
         }
       }
     }

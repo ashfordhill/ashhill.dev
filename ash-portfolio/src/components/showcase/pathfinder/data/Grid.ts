@@ -1,6 +1,8 @@
-// Grid configuration
-export const GRID_ROWS = 40;
-export const GRID_COLS = 60;
+import { CityLayoutGenerator, CityTile, TileType } from './TileMap';
+
+// Grid configuration - smaller for better performance
+export const GRID_ROWS = 25;
+export const GRID_COLS = 40;
 
 export interface GridPosition {
   row: number;
@@ -16,6 +18,7 @@ export interface GridCell {
 
 export class Grid {
   private obstacles: Set<string>;
+  private cityLayout: CityLayoutGenerator;
   public readonly rows: number;
   public readonly cols: number;
   public readonly destination: GridPosition;
@@ -26,14 +29,27 @@ export class Grid {
     this.cols = cols;
     this.obstacles = new Set<string>();
     
+    // Generate city layout
+    this.cityLayout = new CityLayoutGenerator(rows, cols);
+    
     // Define the destination (center of rightmost column)
     this.destination = { row: Math.floor(rows / 2), col: cols - 1 };
     
-    // Define spawn points (evenly distributed on leftmost column)
-    this.spawnPoints = Array.from({ length: 5 }, (_, i) => ({ 
-      row: i * 10 + 5, 
-      col: 0 
-    })).filter(pos => pos.row < rows);
+    // Define spawn points (evenly distributed on leftmost column with spacing)
+    this.spawnPoints = [];
+    const spawnCount = 4;
+    const startRow = 6;
+    const spacing = 4;
+    
+    for (let i = 0; i < spawnCount; i++) {
+      const row = startRow + (i * spacing);
+      if (row < rows - 5) {
+        this.spawnPoints.push({ row, col: 0 });
+      }
+    }
+    
+    // Initialize obstacles from city layout
+    this.initializeObstaclesFromCityLayout();
   }
 
   // Convert position to string key for the Set
@@ -95,5 +111,30 @@ export class Grid {
   public isInBounds(position: GridPosition): boolean {
     return position.row >= 0 && position.row < this.rows &&
            position.col >= 0 && position.col < this.cols;
+  }
+
+  // Initialize obstacles from city layout
+  private initializeObstaclesFromCityLayout(): void {
+    const layout = this.cityLayout.getLayout();
+    
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        const tile = layout[row][col];
+        if (tile.isObstacle && !this.isSpawnPoint({ row, col }) && !this.isDestination({ row, col })) {
+          this.obstacles.add(this.positionToKey({ row, col }));
+        }
+      }
+    }
+  }
+
+  // Reset obstacles to city layout pattern
+  public resetToPredefinedObstacles(): void {
+    this.obstacles.clear();
+    this.initializeObstaclesFromCityLayout();
+  }
+
+  // Get city tile information for rendering
+  public getCityTile(position: GridPosition): CityTile | null {
+    return this.cityLayout.getTile(position.row, position.col);
   }
 }

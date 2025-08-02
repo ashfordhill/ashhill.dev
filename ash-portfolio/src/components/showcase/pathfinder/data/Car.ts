@@ -5,11 +5,15 @@ export type Path = [number, number][];
 export interface Car {
   id: number;
   position: GridPosition;
+  visualPosition: { x: number; y: number }; // For smooth interpolation
+  targetPosition: GridPosition; // Where the car is moving to
   path: Path;
   pathIndex: number;
   spawnTick: number;
   moves: number;
   isFinished: boolean;
+  interpolationProgress: number; // 0-1 for smooth movement
+  direction: 'up' | 'down' | 'left' | 'right'; // For car sprite rotation
 }
 
 export class CarManager {
@@ -30,11 +34,15 @@ export class CarManager {
     const car: Car = {
       id: this.spawnedCount,
       position: { ...spawnPosition },
+      visualPosition: { x: spawnPosition.col, y: spawnPosition.row },
+      targetPosition: { ...spawnPosition },
       path: path || [[spawnPosition.row, spawnPosition.col]],
       pathIndex: 0,
       spawnTick: currentTick,
       moves: 0,
-      isFinished: false
+      isFinished: false,
+      interpolationProgress: 1.0,
+      direction: 'right'
     };
     
     this.spawnedCount++;
@@ -54,9 +62,40 @@ export class CarManager {
     }
     
     const [nextRow, nextCol] = car.path[car.pathIndex + 1];
+    
+    // Set target position and start interpolation
+    car.targetPosition = { row: nextRow, col: nextCol };
+    car.interpolationProgress = 0.0;
+    
+    // Calculate direction for sprite rotation
+    const deltaRow = nextRow - car.position.row;
+    const deltaCol = nextCol - car.position.col;
+    
+    if (deltaRow > 0) car.direction = 'down';
+    else if (deltaRow < 0) car.direction = 'up';
+    else if (deltaCol > 0) car.direction = 'right';
+    else if (deltaCol < 0) car.direction = 'left';
+    
+    // Update logical position
     car.position = { row: nextRow, col: nextCol };
     car.pathIndex++;
     car.moves++;
+  }
+
+  // Update car interpolation (called more frequently than movement)
+  public updateCarInterpolation(car: Car, deltaTime: number): void {
+    if (car.interpolationProgress < 1.0) {
+      car.interpolationProgress = Math.min(1.0, car.interpolationProgress + deltaTime * 3.0); // Adjust speed as needed
+      
+      // Interpolate visual position
+      const startX = car.visualPosition.x;
+      const startY = car.visualPosition.y;
+      const targetX = car.targetPosition.col;
+      const targetY = car.targetPosition.row;
+      
+      car.visualPosition.x = startX + (targetX - startX) * car.interpolationProgress;
+      car.visualPosition.y = startY + (targetY - startY) * car.interpolationProgress;
+    }
   }
 
   // Mark a car as finished and record its metrics
