@@ -4,9 +4,7 @@ Using my [Puppeteer GitHub Action](https://github.com/ashfordhill/puppeteer-acti
 
 Main:
 
-[<img src="./timeline/screenshot-latest.png" width="600" height="300"
-/>](https://github.com/ashfordhill/ashhill.dev/blob/main/timeline/timeline.mp4)
-
+<video width="630" height="300" src="https://github.com/ashfordhill/ashhill.dev/blob/main/timeline/timeline.mp4"></video>
 
 # Showcase
 
