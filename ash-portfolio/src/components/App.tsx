@@ -86,7 +86,7 @@ const AppContent: React.FC = () => {
         justifyContent: 'center',
         position: 'relative',
         '&::before': {
-          content: '"◆ NEURAL PATHFINDING INTERFACE ◆"',
+          content: '"◆ EXPERIMENTING WITH GENERATED CODE ◆"',
           color: palette.primary,
           fontFamily: 'monospace',
           fontSize: '14px',

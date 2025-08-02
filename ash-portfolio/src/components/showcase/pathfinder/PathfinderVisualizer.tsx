@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper, Tooltip, Button } from '@mui/material';
+import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper, Tooltip, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { SimulationEngine, SimulationMetrics } from './engine/SimulationEngine';
 import { Grid, GridPosition } from './data/Grid';
 import { Car } from './data/Car';
 import { useAppSelector } from '../../../store/hooks';
 import { colorPalettes } from '../../../store/slices/themeSlice';
+import TileRenderer, { CarRenderer } from './rendering/TileRenderer';
 
 // Icons
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import StarIcon from '@mui/icons-material/Star';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -27,7 +29,7 @@ const PathfinderVisualizer: React.FC = () => {
   const [gridUpdateTrigger, setGridUpdateTrigger] = useState<number>(0);
   const [algorithm, setAlgorithm] = useState<string>('BFS');
   const [tool, setTool] = useState<string>('add');
-  const [showMetrics, setShowMetrics] = useState<boolean>(false);
+
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [metrics, setMetrics] = useState<SimulationMetrics>({
     totalTime: 0,
@@ -47,17 +49,15 @@ const PathfinderVisualizer: React.FC = () => {
     
     engine.setOnComplete((simulationMetrics) => {
       setMetrics(simulationMetrics);
-      setShowMetrics(true);
       setIsRunning(false);
       
-      // After a brief pause, restart the simulation
+      // Immediately restart the simulation
       setTimeout(() => {
         if (!engine.getState().isRunning) {
-          setShowMetrics(false);
           engine.start();
           setIsRunning(true);
         }
-      }, 3000);
+      }, 1000);
     });
     
     // Start the simulation
@@ -75,13 +75,14 @@ const PathfinderVisualizer: React.FC = () => {
     const engine = engineRef.current;
     engine.stop();
     engine.setAlgorithm(algorithm);
-    setShowMetrics(false);
+    //setShowMetrics(false);
     engine.start();
     setIsRunning(true);
   }, [algorithm]);
 
-  // Handler for algorithm toggle
-  const handleAlgorithmChange = (event: React.MouseEvent<HTMLElement>, newAlg: string) => {
+  // Handler for algorithm dropdown change
+  const handleAlgorithmChange = (event: any) => {
+    const newAlg = event.target.value;
     if (!newAlg || newAlg === algorithm) return;
     setAlgorithm(newAlg);
   };
@@ -104,12 +105,17 @@ const PathfinderVisualizer: React.FC = () => {
     }
   };
 
+  // Handler for resetting obstacles to predefined pattern
+  const handleResetObstacles = () => {
+    const engine = engineRef.current;
+    engine.resetObstacles();
+    setGridUpdateTrigger(prev => prev + 1);
+  };
+
 
 
   // Handler for clicking on a grid cell
-  const handleCellClick = (position: GridPosition) => {
-    if (showMetrics) return;
-    
+  const handleCellClick = (position: GridPosition) => {    
     const engine = engineRef.current;
     const { row, col } = position;
     
@@ -123,7 +129,7 @@ const PathfinderVisualizer: React.FC = () => {
     setGridUpdateTrigger(prev => prev + 1);
   };
 
-  // Render the grid
+  // Render the grid with city tiles
   const renderGrid = () => {
     const grid = engineRef.current.getState().grid; // Always get fresh grid from engine
     const rows = grid.rows;
@@ -134,15 +140,13 @@ const PathfinderVisualizer: React.FC = () => {
     const maxHeight = typeof window !== 'undefined' ? window.innerHeight * 0.6 : 600; // 60% of screen height for grid
     const cellSizeByWidth = Math.floor((maxWidth - 20) / cols); // Account for padding
     const cellSizeByHeight = Math.floor((maxHeight - 20) / rows);
-    const cellSize = Math.max(6, Math.min(12, Math.min(cellSizeByWidth, cellSizeByHeight)));
+    const cellSize = Math.max(12, Math.min(20, Math.min(cellSizeByWidth, cellSizeByHeight))); // Increased minimum size for better tile visibility
     
     return (
       <Box 
         sx={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
-          gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
-          gap: '1px',
+          position: 'relative',
+          display: 'inline-block',
           backgroundColor: palette.background,
           border: `2px solid ${palette.border}80`,
           borderRadius: '4px',
@@ -151,100 +155,85 @@ const PathfinderVisualizer: React.FC = () => {
             0 0 10px ${palette.border}20,
             inset 0 0 20px ${palette.primary}05
           `,
-          position: 'relative',
-          // Retro CRT effect
-          '&::after': {
-            content: '""',
+        }}
+      >
+        {/* Grid tiles */}
+        <Box 
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
+            gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+            gap: '0px', // No gap for seamless tile appearance
+            position: 'relative',
+          }}
+        >
+          {Array.from({ length: rows }).map((_, r) =>
+            Array.from({ length: cols }).map((_, c) => {
+              const position = { row: r, col: c };
+              const key = `${r},${c}`;
+              
+              // Get city tile information
+              const cityTile = grid.getCityTile(position);
+              
+              // Check for special states
+              const isSpawnPoint = grid.isSpawnPoint(position);
+              const isDestination = grid.isDestination(position);
+              
+              return (
+                <TileRenderer
+                  key={key}
+                  position={position}
+                  cityTile={cityTile}
+                  isSpawnPoint={isSpawnPoint}
+                  isDestination={isDestination}
+                  cellSize={cellSize}
+                  onClick={handleCellClick}
+                  showMetrics={false}
+                  palette={palette}
+                />
+              );
+            })
+          )}
+        </Box>
+
+        {/* Cars layer - rendered separately for smooth interpolation */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: { xs: '4px', sm: '6px' },
+            left: { xs: '4px', sm: '6px' },
+            pointerEvents: 'none',
+          }}
+        >
+          {cars.map((car) => (
+            <CarRenderer
+              key={car.id}
+              car={car}
+              cellSize={cellSize}
+              palette={palette}
+            />
+          ))}
+        </Box>
+
+        {/* Subtle overlay effect for city atmosphere */}
+        <Box
+          sx={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
             background: `
-              repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                ${palette.primary}03 2px,
-                ${palette.primary}03 4px
+              radial-gradient(
+                circle at 30% 30%,
+                ${palette.primary}02,
+                transparent 50%
               )
             `,
             pointerEvents: 'none',
-          }
-        }}
-      >
-        {Array.from({ length: rows }).map((_, r) =>
-          Array.from({ length: cols }).map((_, c) => {
-            const position = { row: r, col: c };
-            const key = `${r},${c}`;
-            let bgColor: string = palette.grid;
-            let borderColor: string = palette.border + '40';
-            let glowColor: string = 'transparent';
-            let cellContent: string | null = null;
-            
-            // Check if this cell is an obstacle
-            if (grid.isObstacle(position)) {
-              bgColor = palette.obstacle;
-              borderColor = palette.border + '80';
-            }
-            
-            // Check if this cell is a spawn point
-            if (grid.isSpawnPoint(position)) {
-              bgColor = palette.spawn + '40';
-              borderColor = palette.spawn + '80';
-              glowColor = palette.spawn + '30';
-              cellContent = '◆';
-            }
-            
-            // Check if this cell is the destination
-            if (grid.isDestination(position)) {
-              bgColor = palette.destination + '40';
-              borderColor = palette.destination + '80';
-              glowColor = palette.destination + '30';
-              cellContent = '★';
-            }
-            
-            // Check if a car is in this cell
-            const carHere = cars.find(car => 
-              car.position.row === r && car.position.col === c
-            );
-            
-            if (carHere) {
-              bgColor = palette.car + '80';
-              borderColor = palette.car + '80';
-              glowColor = palette.car + '30';
-              cellContent = '●';
-            }
-            
-            return (
-              <Box 
-                key={key}
-                onClick={() => handleCellClick(position)}
-                sx={{
-                  width: `${cellSize}px`, 
-                  height: `${cellSize}px`,
-                  backgroundColor: bgColor,
-                  border: `1px solid ${borderColor}`,
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  cursor: showMetrics ? 'default' : 'crosshair',
-                  fontSize: '8px',
-                  color: palette.text,
-                  fontWeight: 'bold',
-                  transition: 'all 0.1s ease',
-                  boxShadow: glowColor !== 'transparent' ? `0 0 2px ${glowColor}` : 'none',
-                  '&:hover': {
-                    backgroundColor: showMetrics ? bgColor : palette.primary + '15',
-                    boxShadow: showMetrics ? (glowColor !== 'transparent' ? `0 0 2px ${glowColor}` : 'none') : `0 0 3px ${palette.primary}40`,
-                  }
-                }}
-              >
-                {cellContent}
-              </Box>
-            );
-          })
-        )}
+            borderRadius: '4px',
+          }}
+        />
       </Box>
     );
   };
@@ -297,29 +286,62 @@ const PathfinderVisualizer: React.FC = () => {
               ALGORITHM
             </Typography>
             
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {engineRef.current.getAvailableAlgorithms().map((alg) => (
-                <Button
-                  key={alg}
-                  variant={algorithm === alg ? 'contained' : 'outlined'}
-                  onClick={() => setAlgorithm(alg)}
-                  sx={{
-                    color: algorithm === alg ? palette.background : palette.secondary,
-                    backgroundColor: algorithm === alg ? palette.secondary : 'transparent',
+            <FormControl fullWidth>
+              <Select
+                value={algorithm}
+                onChange={handleAlgorithmChange}
+                sx={{
+                  color: palette.text,
+                  fontFamily: 'monospace',
+                  fontWeight: 'bold',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: palette.secondary + '80',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
                     borderColor: palette.secondary,
-                    fontFamily: 'monospace',
-                    fontWeight: 'bold',
-                    '&:hover': {
-                      backgroundColor: palette.secondary + '20',
-                      borderColor: palette.secondary,
-                      boxShadow: `0 0 10px ${palette.secondary}60`
+                    boxShadow: `0 0 8px ${palette.secondary}40`
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: palette.secondary,
+                    boxShadow: `0 0 12px ${palette.secondary}60`
+                  },
+                  '& .MuiSelect-icon': {
+                    color: palette.secondary,
+                  },
+                  backgroundColor: palette.background + '40',
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: palette.background,
+                      border: `2px solid ${palette.secondary}80`,
+                      borderRadius: '8px',
+                      boxShadow: `0 0 20px ${palette.secondary}40`,
+                      '& .MuiMenuItem-root': {
+                        color: palette.text,
+                        fontFamily: 'monospace',
+                        fontWeight: 'bold',
+                        '&:hover': {
+                          backgroundColor: palette.secondary + '20',
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: palette.secondary + '40',
+                          '&:hover': {
+                            backgroundColor: palette.secondary + '60',
+                          }
+                        }
+                      }
                     }
-                  }}
-                >
-                  {alg}
-                </Button>
-              ))}
-            </Box>
+                  }
+                }}
+              >
+                {engineRef.current.getAvailableAlgorithms().map((alg) => (
+                  <MenuItem key={alg} value={alg}>
+                    {alg}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
 
           {/* Controls Section */}
@@ -401,6 +423,26 @@ const PathfinderVisualizer: React.FC = () => {
                   REMOVE
                 </Button>
               </Box>
+
+              {/* Reset Obstacles Button */}
+              <Button
+                variant="outlined"
+                onClick={handleResetObstacles}
+                startIcon={<RefreshIcon />}
+                sx={{
+                  color: palette.secondary,
+                  backgroundColor: 'transparent',
+                  borderColor: palette.secondary,
+                  fontFamily: 'monospace',
+                  fontSize: '0.8rem',
+                  '&:hover': {
+                    backgroundColor: palette.secondary + '20',
+                    boxShadow: `0 0 8px ${palette.secondary}60`
+                  }
+                }}
+              >
+                RESET OBSTACLES
+              </Button>
             </Box>
           </Box>
 
@@ -425,23 +467,9 @@ const PathfinderVisualizer: React.FC = () => {
             
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Typography sx={{ color: palette.text, fontFamily: 'monospace' }}>
-                <span style={{ color: palette.accent }}>Average Time:</span><br />
-                <span style={{ color: palette.primary, fontSize: '1.2rem', fontWeight: 'bold' }}>
-                  {metrics.avgTime.toFixed(1)}
-                </span>
-              </Typography>
-              
-              <Typography sx={{ color: palette.text, fontFamily: 'monospace' }}>
                 <span style={{ color: palette.accent }}>Cars En Route:</span><br />
                 <span style={{ color: palette.primary, fontSize: '1.2rem', fontWeight: 'bold' }}>
                   {cars.length}
-                </span>
-              </Typography>
-              
-              <Typography sx={{ color: palette.text, fontFamily: 'monospace' }}>
-                <span style={{ color: palette.accent }}>Destination Rate:</span><br />
-                <span style={{ color: palette.primary, fontSize: '1.2rem', fontWeight: 'bold' }}>
-                  {metrics.shortestPath > 0 ? '94%' : '--'}
                 </span>
               </Typography>
             </Box>
@@ -471,55 +499,7 @@ const PathfinderVisualizer: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Metrics Overlay (shown when simulation ends) */}
-      {showMetrics && (
-        <Box
-          sx={{ 
-            position: 'fixed', 
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: palette.background + 'CC',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000
-          }}
-        >
-          <Paper 
-            elevation={0}
-            sx={{ 
-              padding: 4, 
-              minWidth: '400px', 
-              textAlign: 'center',
-              backgroundColor: palette.background,
-              border: `3px solid ${palette.primary}`,
-              borderRadius: '12px',
-              boxShadow: `0 0 30px ${palette.primary}80`,
-              color: palette.text
-            }}
-          >
-            <Typography variant="h4" sx={{ 
-              color: palette.primary, 
-              mb: 3, 
-              fontFamily: 'monospace',
-              textShadow: `0 0 10px ${palette.primary}80`
-            }}>
-              SIMULATION COMPLETE
-            </Typography>
-            <Typography sx={{ color: palette.text, fontFamily: 'monospace', fontSize: '1.1rem', mb: 1 }}>
-              Total time (ticks): <span style={{ color: palette.secondary, fontWeight: 'bold' }}>{metrics.totalTime}</span>
-            </Typography>
-            <Typography sx={{ color: palette.text, fontFamily: 'monospace', fontSize: '1.1rem', mb: 1 }}>
-              Average time per car: <span style={{ color: palette.secondary, fontWeight: 'bold' }}>{metrics.avgTime.toFixed(1)}</span>
-            </Typography>
-            <Typography sx={{ color: palette.text, fontFamily: 'monospace', fontSize: '1.1rem' }}>
-              Shortest path length: <span style={{ color: palette.secondary, fontWeight: 'bold' }}>{metrics.shortestPath}</span>
-            </Typography>
-          </Paper>
-        </Box>
-      )}
+
     </Box>
   );
 };

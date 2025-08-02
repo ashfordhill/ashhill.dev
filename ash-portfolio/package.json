@@ -31,7 +31,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -H 0.0.0.0"
+    "start": "next start -H 0.0.0.0",
+    "build-cloudflare": "npx @cloudflare/next-on-pages build",
+    "deploy-cloudflare": "wrangler deploy"
   },
   "eslintConfig": {
     "extends": [
@@ -50,5 +52,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.13",
+    "wrangler": "^4.27.0"
   }
 }
