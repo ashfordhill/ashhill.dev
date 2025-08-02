@@ -1,0 +1,9 @@
+name = "portfolio"
+main = ".vercel/output/functions/[[path]].func/index.js"
+compatibility_date = "2025-08-01"
+
+[site]
+bucket = ".vercel/output/static"
+
+[build]
+command = "npx @cloudflare/next-on-pages build"

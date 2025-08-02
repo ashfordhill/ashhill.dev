@@ -115,9 +115,7 @@ const PathfinderVisualizer: React.FC = () => {
 
 
   // Handler for clicking on a grid cell
-  const handleCellClick = (position: GridPosition) => {
-    if (showMetrics) return;
-    
+  const handleCellClick = (position: GridPosition) => {    
     const engine = engineRef.current;
     const { row, col } = position;
     
