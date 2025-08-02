@@ -2,11 +2,11 @@
 
 Using my [Puppeteer GitHub Action](https://github.com/ashfordhill/puppeteer-action)
 
-Timelapse of Main:
+Main:
 
+[<img src="./timeline/screenshot-latest.png" width="600" height="300"
+/>](https://github.com/ashfordhill/ashhill.dev/blob/main/timeline/timeline.mp4)
 
-Latest Screenshot (branch-specific)
-![Latest Screenshot](./timeline/screenshot-latest.png)
 
 # Showcase
 
