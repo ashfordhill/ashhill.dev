@@ -34,7 +34,7 @@ jobs:
         run: npm run start &
 
       - name: Take visual records of current app
-        uses: ashfordhill/puppeteer-action@v1
+        uses: ashfordhill/puppeteer-action@v3
         with:
           url: 'http://localhost:3000'
           folder: 'timeline'
