@@ -1,9 +1,0 @@
-name = "portfolio"
-main = ".vercel/output/static/_worker.js/index.js"
-compatibility_date = "2025-08-02"
-
-[site]
-bucket = ".vercel/output/static"
-
-[build]
-command = "npm install && npx @cloudflare/next-on-pages"
