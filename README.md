@@ -1,10 +1,16 @@
 # Status
 
-Using my [Puppeteer GitHub Action](https://github.com/ashfordhill/puppeteer-action)
+Using my [Puppeteer GitHub Action](https://github.com/ashfordhill/puppeteer-action).
 
-Main:
+Experimenting with Zencoder.
 
-<!--VIDEO--><!--/VIDEO-->
+### Latest View
+
+![](./timeline/screenshot-latest.png)
+
+### History
+
+![](./timeline/timeline.gif)
 
 # Showcase
 
