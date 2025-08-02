@@ -1,7 +1,10 @@
 name: Screenshot and generate video
 description: Take screenshots and generate a video of the Next.js app using Puppeteer
 
-on: [push, pull_request]
+on: 
+  push:
+  # Trigger being able to do a manual fresh build on the GitHub UI (?)
+  workflow_dispatch:
 
 jobs:
   screenshot:
