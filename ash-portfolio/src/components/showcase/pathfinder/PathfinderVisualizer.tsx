@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, Button, Select, MenuItem, FormControl } from '@mui/material';
 import { SimulationEngine } from './engine/SimulationEngine';
 import { GridPosition } from './data/Grid';
 import { Car } from './data/Car';
@@ -8,8 +8,6 @@ import { colorPalettes } from '../../../store/slices/themeSlice';
 import TileRenderer, { CarRenderer } from './rendering/TileRenderer';
 
 // Icons
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
@@ -24,9 +22,7 @@ const PathfinderVisualizer: React.FC = () => {
 
   // UI state
   const [cars, setCars] = useState<Car[]>([]);
-  const [gridUpdateTrigger, setGridUpdateTrigger] = useState<number>(0);
   const [algorithm, setAlgorithm] = useState<string>('BFS');
-  const [tool, setTool] = useState<string>('add');
 
   const [isRunning, setIsRunning] = useState<boolean>(false);
 
@@ -78,12 +74,6 @@ const PathfinderVisualizer: React.FC = () => {
     setAlgorithm(newAlg);
   };
 
-  // Handler for obstacle tool toggle
-  const handleToolChange = (event: React.MouseEvent<HTMLElement>, newTool: string) => {
-    if (!newTool) return;
-    setTool(newTool);
-  };
-
   // Handler for play/pause
   const handlePlayPause = () => {
     const engine = engineRef.current;
@@ -100,7 +90,6 @@ const PathfinderVisualizer: React.FC = () => {
   const handleResetObstacles = () => {
     const engine = engineRef.current;
     engine.resetObstacles();
-    setGridUpdateTrigger(prev => prev + 1);
   };
 
 
@@ -108,16 +97,8 @@ const PathfinderVisualizer: React.FC = () => {
   // Handler for clicking on a grid cell
   const handleCellClick = (position: GridPosition) => {    
     const engine = engineRef.current;
-    const { row, col } = position;
-    
-    if (tool === 'add') {
-      engine.addObstacle(position);
-    } else if (tool === 'remove') {
-      engine.removeObstacle(position);
-    }
-    
-    // Trigger a re-render to show the updated grid
-    setGridUpdateTrigger(prev => prev + 1);
+    // Toggle obstacle on click
+    engine.addObstacle(position);
   };
 
   // Render the grid with city tiles
@@ -375,47 +356,7 @@ const PathfinderVisualizer: React.FC = () => {
                 {isRunning ? 'STOP' : 'START'}
               </Button>
 
-              {/* Tool Selection */}
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant={tool === 'add' ? 'contained' : 'outlined'}
-                  onClick={() => setTool('add')}
-                  startIcon={<AddIcon />}
-                  sx={{
-                    flex: 1,
-                    color: tool === 'add' ? palette.background : palette.accent,
-                    backgroundColor: tool === 'add' ? palette.accent : 'transparent',
-                    borderColor: palette.accent,
-                    fontFamily: 'monospace',
-                    fontSize: '0.7rem',
-                    '&:hover': {
-                      backgroundColor: palette.accent + '20',
-                      boxShadow: `0 0 8px ${palette.accent}60`
-                    }
-                  }}
-                >
-                  ADD
-                </Button>
-                <Button
-                  variant={tool === 'remove' ? 'contained' : 'outlined'}
-                  onClick={() => setTool('remove')}
-                  startIcon={<RemoveIcon />}
-                  sx={{
-                    flex: 1,
-                    color: tool === 'remove' ? palette.background : palette.accent,
-                    backgroundColor: tool === 'remove' ? palette.accent : 'transparent',
-                    borderColor: palette.accent,
-                    fontFamily: 'monospace',
-                    fontSize: '0.7rem',
-                    '&:hover': {
-                      backgroundColor: palette.accent + '20',
-                      boxShadow: `0 0 8px ${palette.accent}60`
-                    }
-                  }}
-                >
-                  REMOVE
-                </Button>
-              </Box>
+
 
               {/* Reset Obstacles Button */}
               <Button

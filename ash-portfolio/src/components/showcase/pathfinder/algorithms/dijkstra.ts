@@ -41,7 +41,7 @@ export class DijkstraAlgorithm implements Algorithm {
       queue.sort((a, b) => a[2] - b[2]);
       
       // Get node with smallest distance
-      const [r, c, d] = queue.shift()!;
+      const [r, c] = queue.shift()!;
       
       // If we've reached the goal, reconstruct and return the path
       if (r === gr && c === gc) {

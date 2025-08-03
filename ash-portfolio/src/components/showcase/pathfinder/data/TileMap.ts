@@ -37,7 +37,10 @@ export const TILE_INDICES = {
   // Nature tiles - only the ones actually used
   NATURE: {
     TREE_SMALL: [370, 371, 372, 407, 408, 409], // Small trees
+    TREE_LARGE: [444, 445, 446, 481, 482, 483], // Large trees
+    BUSH: [518, 519, 520, 555, 556, 557], // Bushes and shrubs
     GRASS: [592, 593, 594, 629, 630, 631], // Grass variations
+    ROCK: [740, 741, 742, 777, 778, 779], // Rocks and debris
   },
   
   // Special tiles - only the ones actually used

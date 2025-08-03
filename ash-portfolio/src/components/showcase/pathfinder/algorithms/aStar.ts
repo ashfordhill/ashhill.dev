@@ -48,7 +48,7 @@ export class AStarAlgorithm implements Algorithm {
 
     const directions = [[1,0],[-1,0],[0,1],[0,-1]];
     while (openHeap.length > 0) {
-      const [cr, cc, fcurr] = pop();  // node with smallest fScore
+      const [cr, cc] = pop();  // node with smallest fScore
       
       if (cr === gr && cc === gc) {
         // reconstruct path
