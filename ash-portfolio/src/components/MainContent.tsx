@@ -29,7 +29,7 @@ const MainContent: React.FC = () => {
 
   return (
     <Box sx={{ 
-      height: 'calc(100vh - 120px)',
+      height: 'calc(90vh - 70px)',
       py: { xs: 1, sm: 1.5, md: 2 },
       display: 'flex',
       flexDirection: 'column',

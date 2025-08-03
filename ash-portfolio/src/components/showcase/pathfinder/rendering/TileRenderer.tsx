@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import { CityTile, TileType, getTilePath, TILE_INDICES, getRandomTile, getTilePosition, SPRITE_SHEET_CONFIG } from '../data/TileMap';
+import { CityTile, getTilePath, TILE_INDICES, getRandomTile, getTilePosition, SPRITE_SHEET_CONFIG } from '../data/TileMap';
 import { GridPosition } from '../data/Grid';
 import { Car } from '../data/Car';
 

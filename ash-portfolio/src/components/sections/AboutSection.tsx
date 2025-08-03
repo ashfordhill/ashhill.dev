@@ -11,8 +11,7 @@ const AboutSection: React.FC = () => {
 
   const commands = [
     { command: 'whoami', output: 'Software Developer & Builder of Things' },
-    { command: 'cat skills.txt', output: 'CI/CD Pipelines • Rapid Prototyping • End-to-End Architecture\nJava/SpringBoot • React/TypeScript • Docker' },
-    { command: 'ls -la passions/', output: 'Making ideas come to life through code\nBuilding tools that actually solve problems\nTurning "what if" into "here it is"' },
+    { command: 'cat skills.txt', output: 'CI/CD • Rapid Prototyping • End-to-End Architecture\nJava/SpringBoot • React/TypeScript • Docker' },
     { command: 'echo $PHILOSOPHY', output: 'Good software connects the dots between what users need and what technology can deliver' }
   ];
 
@@ -22,50 +21,55 @@ const AboutSection: React.FC = () => {
       let index = 0;
       
       const timer = setInterval(() => {
-        if (index <= fullText.length) {
-          setTypedText(prev => prev + fullText[index]);
+        if (index < fullText.length) {
+          setTypedText(prev => prev + (fullText[index] || ''));
           index++;
         } else {
           clearInterval(timer);
           setTimeout(() => {
             setCurrentCommand(prev => prev + 1);
-          }, 1500);
+          }, 1000);
         }
-      }, 50);
+      }, 40);
 
       return () => clearInterval(timer);
     }
   }, [currentCommand]);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper 
         elevation={6} 
         sx={{ 
-          p: 4, 
+          p: { xs: 2, md: 3 }, 
           backgroundColor: palette.background + 'E6',
           border: `2px solid ${palette.border}`,
           borderRadius: '12px',
           boxShadow: `0 0 30px ${palette.border}40`,
           backdropFilter: 'blur(10px)',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
         <Typography 
           variant="h3" 
           sx={{ 
             color: palette.primary, 
-            mb: 4, 
+            mb: { xs: 2, md: 3 }, 
             fontFamily: 'monospace',
             textShadow: `0 0 15px ${palette.primary}80`,
             textAlign: 'center',
             textTransform: 'uppercase',
-            letterSpacing: '2px'
+            letterSpacing: '2px',
+            fontSize: { xs: '1.8rem', md: '3rem' }
           }}
         >
           About Me
         </Typography>
         
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 }, flex: 1 }}>
           {/* Terminal Window */}
           <Box sx={{
             border: `2px solid ${palette.secondary}`,
@@ -99,14 +103,14 @@ const AboutSection: React.FC = () => {
             </Box>
             
             {/* Terminal Content */}
-            <Box sx={{ p: 3, minHeight: '300px' }}>
+            <Box sx={{ p: { xs: 2, md: 3 }, minHeight: { xs: '180px', md: '225px' }, flex: 1 }}>
               <Typography 
                 component="pre"
                 sx={{ 
                   color: palette.primary,
                   fontFamily: 'monospace',
-                  fontSize: '1rem',
-                  lineHeight: 1.6,
+                  fontSize: { xs: '0.9rem', md: '1rem' },
+                  lineHeight: 1.5,
                   whiteSpace: 'pre-wrap',
                   margin: 0
                 }}
@@ -131,10 +135,10 @@ const AboutSection: React.FC = () => {
           </Box>
 
           {/* Additional Info */}
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 3 } }}>
             <Box sx={{ 
               flex: 1,
-              p: 3, 
+              p: { xs: 2, md: 3 }, 
               border: `1px solid ${palette.accent}`,
               borderRadius: '8px',
               backgroundColor: palette.accent + '10'
@@ -155,7 +159,8 @@ const AboutSection: React.FC = () => {
                 sx={{ 
                   color: palette.text, 
                   fontFamily: 'monospace',
-                  lineHeight: 1.6
+                  lineHeight: 1.5,
+                  fontSize: { xs: '0.9rem', md: '1rem' }
                 }}
               >
                 I connect the dots between ideas and implementation. Whether it's setting up CI/CD pipelines that just work, 
@@ -165,7 +170,7 @@ const AboutSection: React.FC = () => {
 
             <Box sx={{ 
               flex: 1,
-              p: 3, 
+              p: { xs: 2, md: 3 }, 
               border: `1px solid ${palette.primary}`,
               borderRadius: '8px',
               backgroundColor: palette.primary + '10'
@@ -186,7 +191,8 @@ const AboutSection: React.FC = () => {
                 sx={{ 
                   color: palette.text, 
                   fontFamily: 'monospace',
-                  lineHeight: 1.6
+                  lineHeight: 1.5,
+                  fontSize: { xs: '0.9rem', md: '1rem' }
                 }}
               >
                 No strong language preferences - I pick the right tool for the job. 

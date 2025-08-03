@@ -1,4 +1,4 @@
-import { CityLayoutGenerator, CityTile, TileType } from './TileMap';
+import { CityLayoutGenerator, CityTile } from './TileMap';
 
 // Grid configuration - smaller for better performance
 export const GRID_ROWS = 25;

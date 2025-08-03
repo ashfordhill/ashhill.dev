@@ -5,12 +5,22 @@ import {
   Typography, 
   Slider,
   Card,
-  CardContent
+  CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemButton,
+  Alert,
+  Link
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import QueueMusicIcon from '@mui/icons-material/QueueMusic';
+import InfoIcon from '@mui/icons-material/Info';
 import { useAppSelector } from '../../store/hooks';
 import { colorPalettes } from '../../store/slices/themeSlice';
 
@@ -72,65 +82,83 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
       }
 
       // Clear canvas with fade effect
-      ctx.fillStyle = `${palette.background}20`;
+      ctx.fillStyle = `${palette.background}15`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Create watercolor-style visualization
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
+      // Create equalizer-style visualization with rainbow gradients
+      const barWidth = canvas.width / bufferLength;
+      const maxBarHeight = canvas.height * 0.8;
+      
+      // Create rainbow color function
+      const getRainbowColor = (index: number, total: number, amplitude: number) => {
+        const hue = (index / total) * 360;
+        const saturation = 70 + amplitude * 30; // More saturated with higher amplitude
+        const lightness = 50 + amplitude * 30; // Brighter with higher amplitude
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      };
 
-      // Draw multiple layers for watercolor effect
-      for (let layer = 0; layer < 3; layer++) {
-        ctx.globalCompositeOperation = layer === 0 ? 'source-over' : 'multiply';
+      // Draw equalizer bars
+      for (let i = 0; i < bufferLength; i++) {
+        const amplitude = dataArray[i] / 255;
+        const barHeight = amplitude * maxBarHeight;
+        const x = i * barWidth;
+        const y = canvas.height - barHeight;
+
+        // Create gradient for each bar
+        const gradient = ctx.createLinearGradient(x, canvas.height, x, y);
+        const rainbowColor = getRainbowColor(i, bufferLength, amplitude);
         
-        for (let i = 0; i < bufferLength; i++) {
-          const amplitude = dataArray[i] / 255;
-          const angle = (i / bufferLength) * Math.PI * 2;
-          const radius = 50 + amplitude * (100 + layer * 30);
-          
-          const x = centerX + Math.cos(angle) * radius;
-          const y = centerY + Math.sin(angle) * radius;
-          
-          // Create gradient for watercolor effect
-          const gradient = ctx.createRadialGradient(x, y, 0, x, y, 20 + amplitude * 30);
-          
-          // Use theme colors with varying opacity
-          const colors = [palette.primary, palette.secondary, palette.accent];
-          const color = colors[layer];
-          
-          gradient.addColorStop(0, `${color}${Math.floor(amplitude * 100 + 20).toString(16).padStart(2, '0')}`);
-          gradient.addColorStop(0.5, `${color}${Math.floor(amplitude * 60 + 10).toString(16).padStart(2, '0')}`);
-          gradient.addColorStop(1, `${color}00`);
-          
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.arc(x, y, 15 + amplitude * 25, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Add flowing particles
-          if (amplitude > 0.3) {
-            const particleX = x + Math.cos(Date.now() * 0.001 + i) * (amplitude * 20);
-            const particleY = y + Math.sin(Date.now() * 0.001 + i) * (amplitude * 20);
-            
-            ctx.fillStyle = `${color}${Math.floor(amplitude * 150).toString(16).padStart(2, '0')}`;
-            ctx.beginPath();
-            ctx.arc(particleX, particleY, 2 + amplitude * 3, 0, Math.PI * 2);
-            ctx.fill();
-          }
+        // Add theme color influence
+        const themeInfluence = 0.3;
+        const baseColor = i < bufferLength / 3 ? palette.primary : 
+                         i < bufferLength * 2 / 3 ? palette.secondary : palette.accent;
+        
+        gradient.addColorStop(0, rainbowColor);
+        gradient.addColorStop(0.5, `${baseColor}${Math.floor(amplitude * 100 + 50).toString(16).padStart(2, '0')}`);
+        gradient.addColorStop(1, rainbowColor);
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, y, barWidth - 1, barHeight);
+
+        // Add glow effect for higher amplitudes
+        if (amplitude > 0.4) {
+          ctx.shadowColor = rainbowColor;
+          ctx.shadowBlur = 10 + amplitude * 20;
+          ctx.fillRect(x, y, barWidth - 1, barHeight);
+          ctx.shadowBlur = 0;
         }
+
+        // Add reflection effect
+        const reflectionHeight = barHeight * 0.3;
+        const reflectionGradient = ctx.createLinearGradient(x, canvas.height, x, canvas.height + reflectionHeight);
+        reflectionGradient.addColorStop(0, `${rainbowColor}40`);
+        reflectionGradient.addColorStop(1, `${rainbowColor}00`);
+        
+        ctx.fillStyle = reflectionGradient;
+        ctx.fillRect(x, canvas.height, barWidth - 1, reflectionHeight);
       }
 
-      // Add central pulse
-      const avgAmplitude = dataArray.reduce((sum, val) => sum + val, 0) / bufferLength / 255;
-      const pulseGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 40 + avgAmplitude * 60);
-      pulseGradient.addColorStop(0, `${palette.primary}${Math.floor(avgAmplitude * 100 + 50).toString(16).padStart(2, '0')}`);
-      pulseGradient.addColorStop(0.7, `${palette.secondary}${Math.floor(avgAmplitude * 80 + 30).toString(16).padStart(2, '0')}`);
-      pulseGradient.addColorStop(1, `${palette.accent}00`);
-      
-      ctx.fillStyle = pulseGradient;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 20 + avgAmplitude * 40, 0, Math.PI * 2);
-      ctx.fill();
+      // Add frequency-based particles
+      for (let i = 0; i < bufferLength; i += 8) {
+        const amplitude = dataArray[i] / 255;
+        if (amplitude > 0.6) {
+          const x = (i / bufferLength) * canvas.width;
+          const y = canvas.height - amplitude * maxBarHeight;
+          const particleSize = 2 + amplitude * 4;
+          
+          const rainbowColor = getRainbowColor(i, bufferLength, amplitude);
+          ctx.fillStyle = `${rainbowColor}${Math.floor(amplitude * 200).toString(16).padStart(2, '0')}`;
+          
+          // Floating particles
+          const time = Date.now() * 0.002;
+          const offsetX = Math.sin(time + i * 0.1) * 20;
+          const offsetY = Math.cos(time + i * 0.1) * 10;
+          
+          ctx.beginPath();
+          ctx.arc(x + offsetX, y + offsetY - 20, particleSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
 
       // Always animate, but with different intensity
       animationRef.current = requestAnimationFrame(draw);
@@ -170,6 +198,13 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
   );
 };
 
+interface Track {
+  id: number;
+  title: string;
+  artist: string;
+  url: string;
+}
+
 const MusicSection: React.FC = () => {
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
   const palette = colorPalettes[currentPalette];
@@ -180,13 +215,26 @@ const MusicSection: React.FC = () => {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.7);
   const [isMuted, setIsMuted] = useState(false);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [showPlaylist, setShowPlaylist] = useState(false);
 
-  // Demo audio URL - you can replace this with your own audio files
-  const demoTrack = {
-    title: "Cyberpunk Dreams",
-    artist: "AI Generated",
-    url: "" // Will be replaced with actual audio file
-  };
+  // Playlist with your MP3 files
+  const playlist: Track[] = [
+    {
+      id: 1,
+      title: "Home Cookin",
+      artist: "Jimit",
+      url: "/music/Jimit - Home Cookin.mp3"
+    },
+    {
+      id: 2,
+      title: "Kissing the Moon",
+      artist: "Skygaze",
+      url: "/music/Skygaze - Kissing the Moon.mp3"
+    }
+  ];
+
+  const currentTrack = playlist[currentTrackIndex];
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -194,7 +242,13 @@ const MusicSection: React.FC = () => {
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const updateDuration = () => setDuration(audio.duration);
-    const handleEnded = () => setIsPlaying(false);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      // Auto-play next track
+      if (currentTrackIndex < playlist.length - 1) {
+        setCurrentTrackIndex(currentTrackIndex + 1);
+      }
+    };
 
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
@@ -205,7 +259,18 @@ const MusicSection: React.FC = () => {
       audio.removeEventListener('loadedmetadata', updateDuration);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, []);
+  }, [currentTrackIndex, playlist.length]);
+
+  // Load current track when track changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.src = currentTrack.url;
+    audio.load();
+    setCurrentTime(0);
+    setDuration(0);
+  }, [currentTrack]);
 
   const togglePlay = () => {
     if (audioRef.current && audioRef.current.src) {
@@ -213,11 +278,30 @@ const MusicSection: React.FC = () => {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(console.error);
       }
+      setIsPlaying(!isPlaying);
     }
-    // Demo mode - just toggle the state
-    setIsPlaying(!isPlaying);
+  };
+
+  const playNextTrack = () => {
+    if (currentTrackIndex < playlist.length - 1) {
+      setCurrentTrackIndex(currentTrackIndex + 1);
+      setIsPlaying(true);
+    }
+  };
+
+  const playPreviousTrack = () => {
+    if (currentTrackIndex > 0) {
+      setCurrentTrackIndex(currentTrackIndex - 1);
+      setIsPlaying(true);
+    }
+  };
+
+  const selectTrack = (index: number) => {
+    setCurrentTrackIndex(index);
+    setIsPlaying(true);
+    setShowPlaylist(false);
   };
 
   const handleSeek = (event: Event, newValue: number | number[]) => {
@@ -267,6 +351,36 @@ const MusicSection: React.FC = () => {
         backdropFilter: 'blur(10px)',
       }}>
         <CardContent sx={{ p: 4 }}>
+          {/* Royalty-Free Music Info */}
+          <Alert 
+            icon={<InfoIcon />}
+            severity="info" 
+            sx={{ 
+              mb: 3,
+              backgroundColor: `${palette.primary}10`,
+              border: `1px solid ${palette.primary}30`,
+              color: palette.text,
+              '& .MuiAlert-icon': {
+                color: palette.primary
+              }
+            }}
+          >
+            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>
+              🎵 Royalty-free AI-generated music from{' '}
+              <Link 
+                href="https://artlist.io/" 
+                target="_blank" 
+                sx={{ 
+                  color: palette.accent,
+                  textDecoration: 'none',
+                  '&:hover': { textDecoration: 'underline' }
+                }}
+              >
+                Artlist.io
+              </Link>
+            </Typography>
+          </Alert>
+
           {/* Track Info */}
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Typography 
@@ -279,7 +393,7 @@ const MusicSection: React.FC = () => {
                 mb: 1
               }}
             >
-              {demoTrack.title}
+              {currentTrack.title}
             </Typography>
             <Typography 
               variant="h6" 
@@ -289,7 +403,18 @@ const MusicSection: React.FC = () => {
                 opacity: 0.8
               }}
             >
-              {demoTrack.artist}
+              {currentTrack.artist}
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: palette.text,
+                fontFamily: 'monospace',
+                opacity: 0.6,
+                mt: 1
+              }}
+            >
+              Track {currentTrackIndex + 1} of {playlist.length}
             </Typography>
           </Box>
 
@@ -341,8 +466,24 @@ const MusicSection: React.FC = () => {
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
-            gap: 2 
+            gap: 2,
+            mb: 2
           }}>
+            {/* Previous Track */}
+            <IconButton
+              onClick={playPreviousTrack}
+              disabled={currentTrackIndex === 0}
+              sx={{
+                color: currentTrackIndex === 0 ? palette.border : palette.secondary,
+                '&:hover': {
+                  color: palette.accent,
+                  transform: currentTrackIndex === 0 ? 'none' : 'scale(1.1)',
+                }
+              }}
+            >
+              <SkipPreviousIcon sx={{ fontSize: 24 }} />
+            </IconButton>
+
             {/* Play/Pause Button */}
             <IconButton
               onClick={togglePlay}
@@ -362,6 +503,39 @@ const MusicSection: React.FC = () => {
               }}
             >
               {isPlaying ? <PauseIcon sx={{ fontSize: 30 }} /> : <PlayArrowIcon sx={{ fontSize: 30 }} />}
+            </IconButton>
+
+            {/* Next Track */}
+            <IconButton
+              onClick={playNextTrack}
+              disabled={currentTrackIndex === playlist.length - 1}
+              sx={{
+                color: currentTrackIndex === playlist.length - 1 ? palette.border : palette.secondary,
+                '&:hover': {
+                  color: palette.accent,
+                  transform: currentTrackIndex === playlist.length - 1 ? 'none' : 'scale(1.1)',
+                }
+              }}
+            >
+              <SkipNextIcon sx={{ fontSize: 24 }} />
+            </IconButton>
+
+            {/* Playlist Toggle */}
+            <IconButton
+              onClick={() => setShowPlaylist(!showPlaylist)}
+              sx={{
+                color: showPlaylist ? palette.accent : palette.secondary,
+                backgroundColor: showPlaylist ? `${palette.accent}15` : 'transparent',
+                border: `2px solid ${showPlaylist ? palette.accent : 'transparent'}40`,
+                '&:hover': {
+                  color: palette.accent,
+                  backgroundColor: `${palette.accent}15`,
+                  borderColor: palette.accent + '40',
+                  transform: 'scale(1.1)',
+                }
+              }}
+            >
+              <QueueMusicIcon sx={{ fontSize: 24 }} />
             </IconButton>
 
             {/* Volume Control */}
@@ -401,10 +575,74 @@ const MusicSection: React.FC = () => {
             </Box>
           </Box>
 
-          {/* Hidden Audio Element - Demo Mode */}
+          {/* Playlist */}
+          {showPlaylist && (
+            <Card sx={{
+              mt: 2,
+              background: `linear-gradient(135deg, ${palette.background}C0 0%, ${palette.primary}05 50%, ${palette.secondary}05 100%)`,
+              border: `1px solid ${palette.border}30`,
+              borderRadius: '8px',
+            }}>
+              <CardContent sx={{ p: 2 }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    color: palette.primary,
+                    fontFamily: 'monospace',
+                    mb: 2,
+                    textAlign: 'center'
+                  }}
+                >
+                  PLAYLIST
+                </Typography>
+                <List sx={{ p: 0 }}>
+                  {playlist.map((track, index) => (
+                    <ListItem key={track.id} sx={{ p: 0 }}>
+                      <ListItemButton
+                        onClick={() => selectTrack(index)}
+                        selected={index === currentTrackIndex}
+                        sx={{
+                          borderRadius: '6px',
+                          mb: 1,
+                          backgroundColor: index === currentTrackIndex ? `${palette.primary}15` : 'transparent',
+                          border: index === currentTrackIndex ? `1px solid ${palette.primary}40` : '1px solid transparent',
+                          '&:hover': {
+                            backgroundColor: `${palette.primary}20`,
+                            borderColor: palette.primary + '60',
+                          }
+                        }}
+                      >
+                        <ListItemText
+                          primary={track.title}
+                          secondary={track.artist}
+                          primaryTypographyProps={{
+                            sx: {
+                              color: index === currentTrackIndex ? palette.primary : palette.text,
+                              fontFamily: 'monospace',
+                              fontWeight: index === currentTrackIndex ? 'bold' : 'normal',
+                            }
+                          }}
+                          secondaryTypographyProps={{
+                            sx: {
+                              color: palette.text,
+                              fontFamily: 'monospace',
+                              opacity: 0.7,
+                            }
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Hidden Audio Element */}
           <audio
             ref={audioRef}
-            preload="none"
+            preload="metadata"
+            crossOrigin="anonymous"
           />
         </CardContent>
       </Card>
@@ -420,7 +658,7 @@ const MusicSection: React.FC = () => {
           fontSize: '0.9rem'
         }}
       >
-        🎵 Watercolor audio visualizer • Demo mode active • Theme colors adapt to your palette
+        🎵 Equalizer-style audio visualizer with rainbow gradients • Theme colors adapt to your palette
       </Typography>
     </Box>
   );

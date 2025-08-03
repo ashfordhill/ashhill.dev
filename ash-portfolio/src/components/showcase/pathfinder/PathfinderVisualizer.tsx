@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper, Tooltip, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { SimulationEngine, SimulationMetrics } from './engine/SimulationEngine';
-import { Grid, GridPosition } from './data/Grid';
+import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { SimulationEngine } from './engine/SimulationEngine';
+import { GridPosition } from './data/Grid';
 import { Car } from './data/Car';
 import { useAppSelector } from '../../../store/hooks';
 import { colorPalettes } from '../../../store/slices/themeSlice';
@@ -11,8 +11,6 @@ import TileRenderer, { CarRenderer } from './rendering/TileRenderer';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import StarIcon from '@mui/icons-material/Star';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 
@@ -31,11 +29,6 @@ const PathfinderVisualizer: React.FC = () => {
   const [tool, setTool] = useState<string>('add');
 
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [metrics, setMetrics] = useState<SimulationMetrics>({
-    totalTime: 0,
-    avgTime: 0,
-    shortestPath: 0
-  });
 
   // Initialize the simulation
   useEffect(() => {
@@ -47,8 +40,7 @@ const PathfinderVisualizer: React.FC = () => {
       setIsRunning(engine.getState().isRunning);
     });
     
-    engine.setOnComplete((simulationMetrics) => {
-      setMetrics(simulationMetrics);
+    engine.setOnComplete(() => {
       setIsRunning(false);
       
       // Immediately restart the simulation
@@ -75,7 +67,6 @@ const PathfinderVisualizer: React.FC = () => {
     const engine = engineRef.current;
     engine.stop();
     engine.setAlgorithm(algorithm);
-    //setShowMetrics(false);
     engine.start();
     setIsRunning(true);
   }, [algorithm]);

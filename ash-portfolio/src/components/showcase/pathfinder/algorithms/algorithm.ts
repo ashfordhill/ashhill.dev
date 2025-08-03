@@ -1,4 +1,3 @@
-import { GridPosition } from '../data/Grid';
 import { Path } from '../data/Car';
 
 export interface Algorithm {

@@ -16,22 +16,14 @@ export enum TileType {
 // Based on Kenney Roguelike Modern City 37x28 tileset (1036 tiles total)
 // Adjusted indices based on typical Kenney tileset layouts
 export const TILE_INDICES = {
-  // Road tiles - asphalt roads with lane markings
+  // Road tiles - only the ones actually used
   ROAD: {
     HORIZONTAL: [185, 186, 187, 222, 223, 224], // Horizontal road segments
     VERTICAL: [148, 185, 222, 259, 296, 333], // Vertical road segments
     INTERSECTION: [186, 223, 260, 297], // Road intersections
-    CORNER_TL: [148], // Top-left corner
-    CORNER_TR: [150], // Top-right corner
-    CORNER_BL: [259], // Bottom-left corner
-    CORNER_BR: [261], // Bottom-right corner
-    T_JUNCTION_UP: [149], // T-junction facing up
-    T_JUNCTION_DOWN: [260], // T-junction facing down
-    T_JUNCTION_LEFT: [185], // T-junction facing left
-    T_JUNCTION_RIGHT: [187], // T-junction facing right
   },
   
-  // Building tiles - modern city buildings
+  // Building tiles - only the ones actually used
   BUILDINGS: {
     HOUSE_SMALL: [0, 1, 2, 37, 38, 39], // Small residential buildings
     HOUSE_MEDIUM: [3, 4, 5, 40, 41, 42], // Medium residential buildings
@@ -42,20 +34,14 @@ export const TILE_INDICES = {
     SKYSCRAPER: [77, 78, 79, 114, 115, 116], // Tall buildings
   },
   
-  // Nature tiles - grass, trees, water
+  // Nature tiles - only the ones actually used
   NATURE: {
     TREE_SMALL: [370, 371, 372, 407, 408, 409], // Small trees
-    TREE_LARGE: [444, 445, 446, 481, 482, 483], // Large trees
-    BUSH: [518, 519, 520, 555, 556, 557], // Bushes and shrubs
     GRASS: [592, 593, 594, 629, 630, 631], // Grass variations
-    WATER: [666, 667, 668, 703, 704, 705], // Water tiles
-    ROCK: [740, 741, 742, 777, 778, 779], // Rocks and debris
   },
   
-  // Special tiles
+  // Special tiles - only the ones actually used
   SPECIAL: {
-    SPAWN_POINT: [370, 371], // Spawn point markers (using small tree tiles as markers)
-    DESTINATION: [444, 445], // Destination markers (using large tree tiles)
     CAR_RED: [814, 815, 816], // Red car sprites
     CAR_BLUE: [851, 852, 853], // Blue car sprites  
     CAR_GREEN: [888, 889, 890], // Green car sprites

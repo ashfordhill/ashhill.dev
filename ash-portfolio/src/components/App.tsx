@@ -68,39 +68,13 @@ const AppContent: React.FC = () => {
         zIndex: 10,
       }
     }}>
-      {/* Top Banner Area */}
-      <Box sx={{
-        height: '60px',
-        background: `
-          linear-gradient(90deg, 
-            ${palette.primary}20 0%, 
-            ${palette.secondary}15 25%, 
-            ${palette.accent}10 50%, 
-            ${palette.secondary}15 75%, 
-            ${palette.primary}20 100%
-          )
-        `,
-        borderBottom: `2px solid ${palette.primary}40`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        '&::before': {
-          content: '"◆ EXPERIMENTING WITH GENERATED CODE ◆"',
-          color: palette.primary,
-          fontFamily: 'monospace',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          textShadow: `0 0 10px ${palette.primary}60`,
-          letterSpacing: '3px',
-        }
-      }} />
+
 
       {/* Main Content Container */}
       <Box sx={{ 
         maxWidth: { xs: '95%', sm: '90%', md: '85%', lg: '80%' },
         mx: 'auto',
-        minHeight: 'calc(100vh - 60px)',
+        minHeight: '90vh',
         pt: 2,
         pb: 2,
         position: 'relative',
