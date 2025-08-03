@@ -1,6 +1,6 @@
 import React from "react";
 import { Paper, Container } from "@mui/material";
-import PathfinderVisualizer from "../showcase/pathfinder/PathfinderVisualizer";
+import GamePathfinder from "../showcase/pathfinder/GamePathfinder";
 import { useAppSelector } from '../../store/hooks';
 import { colorPalettes } from '../../store/slices/themeSlice';
 
@@ -52,7 +52,7 @@ const FunSection: React.FC = () => {
           }
         }}
       >
-        <PathfinderVisualizer />
+        <GamePathfinder />
       </Paper>
     </Container>
   );

@@ -130,9 +130,9 @@ export class SimulationEngine {
     this.grid.removeObstacle(position);
   }
 
-  // Reset obstacles to predefined pattern
+  // Reset obstacles to predefined pattern (clear user-added obstacles)
   public resetObstacles(): void {
-    this.grid.resetToPredefinedObstacles();
+    this.grid.clearUserObstacles();
   }
 
   // Animation loop for smooth car interpolation

@@ -97,8 +97,14 @@ const PathfinderVisualizer: React.FC = () => {
   // Handler for clicking on a grid cell
   const handleCellClick = (position: GridPosition) => {    
     const engine = engineRef.current;
-    // Toggle obstacle on click
-    engine.addObstacle(position);
+    const grid = engine.getState().grid;
+    
+    // Toggle user obstacles: if there's a user obstacle, remove it; otherwise add one
+    if (grid.isUserObstacle(position)) {
+      engine.removeObstacle(position);
+    } else {
+      engine.addObstacle(position);
+    }
   };
 
   // Render the grid with city tiles
@@ -150,6 +156,7 @@ const PathfinderVisualizer: React.FC = () => {
               // Check for special states
               const isSpawnPoint = grid.isSpawnPoint(position);
               const isDestination = grid.isDestination(position);
+              const isUserObstacle = grid.isUserObstacle(position);
               
               return (
                 <TileRenderer
@@ -158,6 +165,7 @@ const PathfinderVisualizer: React.FC = () => {
                   cityTile={cityTile}
                   isSpawnPoint={isSpawnPoint}
                   isDestination={isDestination}
+                  isUserObstacle={isUserObstacle}
                   cellSize={cellSize}
                   onClick={handleCellClick}
                   showMetrics={false}
@@ -375,7 +383,7 @@ const PathfinderVisualizer: React.FC = () => {
                   }
                 }}
               >
-                RESET OBSTACLES
+                CLEAR CONES
               </Button>
             </Box>
           </Box>

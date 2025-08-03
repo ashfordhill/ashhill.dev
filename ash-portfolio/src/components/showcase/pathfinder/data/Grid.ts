@@ -17,7 +17,8 @@ export interface GridCell {
 }
 
 export class Grid {
-  private obstacles: Set<string>;
+  private obstacles: Set<string>; // All obstacles (city + user)
+  private userObstacles: Set<string>; // Only user-added obstacles
   private cityLayout: CityLayoutGenerator;
   public readonly rows: number;
   public readonly cols: number;
@@ -28,6 +29,7 @@ export class Grid {
     this.rows = rows;
     this.cols = cols;
     this.obstacles = new Set<string>();
+    this.userObstacles = new Set<string>();
     
     // Generate city layout
     this.cityLayout = new CityLayoutGenerator(rows, cols);
@@ -62,18 +64,33 @@ export class Grid {
     return this.obstacles.has(this.positionToKey(position));
   }
 
-  // Add an obstacle at the specified position
+  // Add a user obstacle at the specified position
   public addObstacle(position: GridPosition): void {
     // Don't add obstacles at spawn points or destination
     if (this.isSpawnPoint(position) || this.isDestination(position)) {
       return;
     }
-    this.obstacles.add(this.positionToKey(position));
+    
+    // Don't add if it's already a city obstacle (roads can't have user obstacles)
+    const cityTile = this.getCityTile(position);
+    if (cityTile && cityTile.type === 'road') {
+      return;
+    }
+    
+    const key = this.positionToKey(position);
+    this.obstacles.add(key);
+    this.userObstacles.add(key);
   }
 
-  // Remove an obstacle at the specified position
+  // Remove a user obstacle at the specified position (only removes user-added obstacles)
   public removeObstacle(position: GridPosition): void {
-    this.obstacles.delete(this.positionToKey(position));
+    const key = this.positionToKey(position);
+    
+    // Only remove if it's a user-added obstacle
+    if (this.userObstacles.has(key)) {
+      this.obstacles.delete(key);
+      this.userObstacles.delete(key);
+    }
   }
 
   // Get all obstacles as an array of positions
@@ -92,6 +109,21 @@ export class Grid {
   // Clear all obstacles
   public clearObstacles(): void {
     this.obstacles.clear();
+    this.userObstacles.clear();
+  }
+
+  // Clear only user-added obstacles
+  public clearUserObstacles(): void {
+    // Remove user obstacles from main obstacles set
+    this.userObstacles.forEach(userObstacle => {
+      this.obstacles.delete(userObstacle);
+    });
+    this.userObstacles.clear();
+  }
+
+  // Check if an obstacle is user-added
+  public isUserObstacle(position: GridPosition): boolean {
+    return this.userObstacles.has(this.positionToKey(position));
   }
 
   // Check if a position is a spawn point

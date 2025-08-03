@@ -6,6 +6,8 @@ export interface Algorithm {
   findPath(
     start: [number, number], 
     goal: [number, number], 
-    obstacles: Set<string>
+    obstacles: Set<string>,
+    gridRows?: number,
+    gridCols?: number
   ): Path | null;
 }

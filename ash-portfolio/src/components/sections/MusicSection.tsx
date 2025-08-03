@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Box, 
   IconButton, 
@@ -36,41 +36,56 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const isSetupRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    if (!audioRef.current || !canvasRef.current) return;
+  const setupAudioContext = useCallback(() => {
+    if (!audioRef.current || isSetupRef.current) return;
 
-    const setupAudioContext = () => {
+    try {
+      // Create AudioContext only once
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+
+      // Create analyser only once
+      if (!analyserRef.current) {
         analyserRef.current = audioContextRef.current.createAnalyser();
         analyserRef.current.fftSize = 256;
-        
-        if (!sourceRef.current) {
-          sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current!);
-          sourceRef.current.connect(analyserRef.current);
-          analyserRef.current.connect(audioContextRef.current.destination);
-        }
       }
-    };
+      
+      // Create source only once
+      if (!sourceRef.current && audioRef.current) {
+        sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
+        sourceRef.current.connect(analyserRef.current);
+        analyserRef.current.connect(audioContextRef.current.destination);
+        isSetupRef.current = true;
+      }
+    } catch (error) {
+      console.warn('AudioContext setup failed:', error);
+      // Continue without audio analysis
+    }
+  }, [audioRef]);
 
-    const draw = () => {
-      if (!canvasRef.current) return;
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d')!;
-      let dataArray: Uint8Array;
-      let bufferLength: number;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-      if (analyserRef.current && audioRef.current && !audioRef.current.paused) {
-        // Real audio data
+    let dataArray: Uint8Array;
+    let bufferLength: number;
+
+    if (analyserRef.current && audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
+      // Real audio data
+      try {
         bufferLength = analyserRef.current.frequencyBinCount;
-        dataArray = new Uint8Array(bufferLength);
+        dataArray = new Uint8Array(new ArrayBuffer(bufferLength));
         analyserRef.current.getByteFrequencyData(dataArray);
-      } else {
-        // Demo mode - simulate audio data
+      } catch (error) {
+        // Fallback to demo mode if audio analysis fails
         bufferLength = 128;
-        dataArray = new Uint8Array(bufferLength);
+        dataArray = new Uint8Array(new ArrayBuffer(bufferLength));
         const time = Date.now() * 0.001;
         for (let i = 0; i < bufferLength; i++) {
           dataArray[i] = Math.floor(
@@ -80,9 +95,28 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
           );
         }
       }
+    } else {
+      // Demo mode - simulate audio data
+      bufferLength = 128;
+      dataArray = new Uint8Array(new ArrayBuffer(bufferLength));
+      const time = Date.now() * 0.001;
+      for (let i = 0; i < bufferLength; i++) {
+        dataArray[i] = Math.floor(
+          (Math.sin(time * 2 + i * 0.1) * 0.5 + 0.5) * 
+          (Math.sin(time * 0.5 + i * 0.05) * 0.5 + 0.5) * 
+          255 * (isPlaying ? 1 : 0.3)
+        );
+      }
+    }
 
       // Clear canvas with fade effect
-      ctx.fillStyle = `${palette.background}15`;
+      const fadeColor = palette.background.startsWith('hsl') 
+        ? palette.background.replace('hsl(', 'hsla(').replace(')', ', 0.08)')
+        : palette.background.startsWith('#') 
+          ? `${palette.background}15`
+          : `rgba(${palette.background.replace(/[^\d,]/g, '')}, 0.08)`;
+      
+      ctx.fillStyle = fadeColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Create equalizer-style visualization with rainbow gradients
@@ -113,8 +147,16 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
         const baseColor = i < bufferLength / 3 ? palette.primary : 
                          i < bufferLength * 2 / 3 ? palette.secondary : palette.accent;
         
+        // Convert theme color to rgba format for proper alpha blending
+        const alphaValue = Math.floor(amplitude * 100 + 50) / 255;
+        const themeColorWithAlpha = baseColor.startsWith('hsl') 
+          ? baseColor.replace('hsl(', 'hsla(').replace(')', `, ${alphaValue})`)
+          : baseColor.startsWith('#') 
+            ? `${baseColor}${Math.floor(alphaValue * 255).toString(16).padStart(2, '0')}`
+            : `rgba(${baseColor.replace(/[^\d,]/g, '')}, ${alphaValue})`;
+        
         gradient.addColorStop(0, rainbowColor);
-        gradient.addColorStop(0.5, `${baseColor}${Math.floor(amplitude * 100 + 50).toString(16).padStart(2, '0')}`);
+        gradient.addColorStop(0.5, themeColorWithAlpha);
         gradient.addColorStop(1, rainbowColor);
 
         ctx.fillStyle = gradient;
@@ -131,8 +173,22 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
         // Add reflection effect
         const reflectionHeight = barHeight * 0.3;
         const reflectionGradient = ctx.createLinearGradient(x, canvas.height, x, canvas.height + reflectionHeight);
-        reflectionGradient.addColorStop(0, `${rainbowColor}40`);
-        reflectionGradient.addColorStop(1, `${rainbowColor}00`);
+        
+        // Convert rainbow color to rgba format for proper alpha blending
+        const rainbowColorWithAlpha = rainbowColor.startsWith('hsl') 
+          ? rainbowColor.replace('hsl(', 'hsla(').replace(')', ', 0.25)')
+          : rainbowColor.startsWith('#') 
+            ? `${rainbowColor}40`
+            : `rgba(${rainbowColor.replace(/[^\d,]/g, '')}, 0.25)`;
+            
+        const rainbowColorTransparent = rainbowColor.startsWith('hsl') 
+          ? rainbowColor.replace('hsl(', 'hsla(').replace(')', ', 0)')
+          : rainbowColor.startsWith('#') 
+            ? `${rainbowColor}00`
+            : `rgba(${rainbowColor.replace(/[^\d,]/g, '')}, 0)`;
+        
+        reflectionGradient.addColorStop(0, rainbowColorWithAlpha);
+        reflectionGradient.addColorStop(1, rainbowColorTransparent);
         
         ctx.fillStyle = reflectionGradient;
         ctx.fillRect(x, canvas.height, barWidth - 1, reflectionHeight);
@@ -147,7 +203,16 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
           const particleSize = 2 + amplitude * 4;
           
           const rainbowColor = getRainbowColor(i, bufferLength, amplitude);
-          ctx.fillStyle = `${rainbowColor}${Math.floor(amplitude * 200).toString(16).padStart(2, '0')}`;
+          
+          // Convert rainbow color to rgba format for proper alpha blending
+          const particleAlpha = amplitude * 0.8; // Use decimal alpha for particles
+          const particleColor = rainbowColor.startsWith('hsl') 
+            ? rainbowColor.replace('hsl(', 'hsla(').replace(')', `, ${particleAlpha})`)
+            : rainbowColor.startsWith('#') 
+              ? `${rainbowColor}${Math.floor(particleAlpha * 255).toString(16).padStart(2, '0')}`
+              : `rgba(${rainbowColor.replace(/[^\d,]/g, '')}, ${particleAlpha})`;
+          
+          ctx.fillStyle = particleColor;
           
           // Floating particles
           const time = Date.now() * 0.002;
@@ -160,26 +225,37 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
         }
       }
 
-      // Always animate, but with different intensity
-      animationRef.current = requestAnimationFrame(draw);
+    // Continue animation
+    animationRef.current = requestAnimationFrame(draw);
+  }, [audioRef, isPlaying, palette]);
+
+  useEffect(() => {
+    // Start animation loop
+    const startAnimation = () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      draw();
     };
 
-    if (isPlaying && audioRef.current && audioRef.current.src) {
-      setupAudioContext();
-      if (audioContextRef.current?.state === 'suspended') {
-        audioContextRef.current.resume();
-      }
-    }
-    
-    // Start animation loop
-    draw();
+    startAnimation();
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isPlaying, palette]);
+  }, [draw]);
+
+  // Setup audio context when playing starts
+  useEffect(() => {
+    if (isPlaying && audioRef.current && audioRef.current.src) {
+      setupAudioContext();
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume().catch(console.warn);
+      }
+    }
+  }, [isPlaying, setupAudioContext]);
 
   return (
     <canvas
@@ -190,9 +266,9 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
         width: '100%',
         height: '300px',
         borderRadius: '12px',
-        background: `linear-gradient(135deg, ${palette.background}40 0%, ${palette.primary}08 50%, ${palette.secondary}08 100%)`,
-        border: `2px solid ${palette.border}30`,
-        boxShadow: `0 0 20px ${palette.primary}20, inset 0 0 20px ${palette.secondary}10`
+        background: `linear-gradient(135deg, ${palette.background.startsWith('#') ? palette.background + '40' : palette.background.replace('hsl(', 'hsla(').replace(')', ', 0.25)')} 0%, ${palette.primary.startsWith('#') ? palette.primary + '08' : palette.primary.replace('hsl(', 'hsla(').replace(')', ', 0.03)')} 50%, ${palette.secondary.startsWith('#') ? palette.secondary + '08' : palette.secondary.replace('hsl(', 'hsla(').replace(')', ', 0.03)')} 100%)`,
+        border: `2px solid ${palette.border.startsWith('#') ? palette.border + '30' : palette.border.replace('hsl(', 'hsla(').replace(')', ', 0.19)')}`,
+        boxShadow: `0 0 20px ${palette.primary.startsWith('#') ? palette.primary + '20' : palette.primary.replace('hsl(', 'hsla(').replace(')', ', 0.13)')}, inset 0 0 20px ${palette.secondary.startsWith('#') ? palette.secondary + '10' : palette.secondary.replace('hsl(', 'hsla(').replace(')', ', 0.06)')}`
       }}
     />
   );
@@ -217,6 +293,7 @@ const MusicSection: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Playlist with your MP3 files
   const playlist: Track[] = [
@@ -236,100 +313,174 @@ const MusicSection: React.FC = () => {
 
   const currentTrack = playlist[currentTrackIndex];
 
+  // Audio event handlers
+  const updateTime = useCallback(() => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  }, []);
+
+  const updateDuration = useCallback(() => {
+    if (audioRef.current && !isNaN(audioRef.current.duration)) {
+      setDuration(audioRef.current.duration);
+    }
+  }, []);
+
+  const handleEnded = useCallback(() => {
+    setIsPlaying(false);
+    // Auto-play next track
+    if (currentTrackIndex < playlist.length - 1) {
+      setCurrentTrackIndex(currentTrackIndex + 1);
+    }
+  }, [currentTrackIndex, playlist.length]);
+
+  const handleError = useCallback((e: Event) => {
+    console.error('Audio error:', e);
+    setError('Failed to load audio file');
+    setIsPlaying(false);
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-    const handleEnded = () => {
-      setIsPlaying(false);
-      // Auto-play next track
-      if (currentTrackIndex < playlist.length - 1) {
-        setCurrentTrackIndex(currentTrackIndex + 1);
-      }
-    };
-
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
-  }, [currentTrackIndex, playlist.length]);
+  }, [updateTime, updateDuration, handleEnded, handleError]);
+
+  // Initialize audio element
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Set initial volume
+    audio.volume = volume;
+    audio.muted = isMuted;
+  }, []);
 
   // Load current track when track changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    audio.src = currentTrack.url;
-    audio.load();
-    setCurrentTime(0);
-    setDuration(0);
-  }, [currentTrack]);
+    try {
+      audio.src = currentTrack.url;
+      audio.volume = volume;
+      audio.muted = isMuted;
+      audio.load();
+      setCurrentTime(0);
+      setDuration(0);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load track:', err);
+      setError('Failed to load track');
+    }
+  }, [currentTrack, volume, isMuted]);
 
-  const togglePlay = () => {
-    if (audioRef.current && audioRef.current.src) {
-      // Real audio mode
+  const togglePlay = useCallback(() => {
+    if (!audioRef.current) return;
+
+    try {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        audioRef.current.play().catch(console.error);
+        // Ensure audio is loaded
+        if (!audioRef.current.src) {
+          audioRef.current.src = currentTrack.url;
+          audioRef.current.load();
+        }
+        
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+              setError(null);
+            })
+            .catch((err) => {
+              console.error('Play failed:', err);
+              setError(`Failed to play audio: ${err.message}`);
+              setIsPlaying(false);
+            });
+        } else {
+          setIsPlaying(true);
+        }
       }
-      setIsPlaying(!isPlaying);
+    } catch (err) {
+      console.error('Toggle play failed:', err);
+      setError('Audio control failed');
+      setIsPlaying(false);
     }
-  };
+  }, [isPlaying, currentTrack.url]);
 
-  const playNextTrack = () => {
+  const playNextTrack = useCallback(() => {
     if (currentTrackIndex < playlist.length - 1) {
       setCurrentTrackIndex(currentTrackIndex + 1);
-      setIsPlaying(true);
+      // Don't auto-play, let user click play
+      setIsPlaying(false);
     }
-  };
+  }, [currentTrackIndex, playlist.length]);
 
-  const playPreviousTrack = () => {
+  const playPreviousTrack = useCallback(() => {
     if (currentTrackIndex > 0) {
       setCurrentTrackIndex(currentTrackIndex - 1);
-      setIsPlaying(true);
+      // Don't auto-play, let user click play
+      setIsPlaying(false);
     }
-  };
+  }, [currentTrackIndex]);
 
-  const selectTrack = (index: number) => {
+  const selectTrack = useCallback((index: number) => {
     setCurrentTrackIndex(index);
-    setIsPlaying(true);
+    // Don't auto-play, let user click play
+    setIsPlaying(false);
     setShowPlaylist(false);
-  };
+  }, []);
 
-  const handleSeek = (event: Event, newValue: number | number[]) => {
+  const handleSeek = useCallback((event: Event, newValue: number | number[]) => {
     if (!audioRef.current) return;
     const time = Array.isArray(newValue) ? newValue[0] : newValue;
     audioRef.current.currentTime = time;
     setCurrentTime(time);
-  };
+  }, []);
 
-  const handleVolumeChange = (event: Event, newValue: number | number[]) => {
+  const handleVolumeChange = useCallback((event: Event, newValue: number | number[]) => {
     const vol = Array.isArray(newValue) ? newValue[0] : newValue;
     setVolume(vol);
     if (audioRef.current) {
       audioRef.current.volume = vol;
     }
-  };
+  }, []);
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     if (!audioRef.current) return;
     audioRef.current.muted = !isMuted;
     setIsMuted(!isMuted);
-  };
+  }, [isMuted]);
 
-  const formatTime = (time: number) => {
+  const formatTime = useCallback((time: number) => {
+    if (!isFinite(time)) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  }, []);
+
+  if (!palette) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="error">Theme palette not loaded</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{
@@ -337,20 +488,31 @@ const MusicSection: React.FC = () => {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
-      p: 3,
+      justifyContent: 'flex-start',
+      p: { xs: 2, sm: 3 },
+      pt: { xs: 1, sm: 2 },
       background: `linear-gradient(135deg, ${palette.background}F0 0%, ${palette.primary}05 25%, ${palette.secondary}05 50%, ${palette.accent}05 75%, ${palette.background}F0 100%)`,
+      overflow: 'auto',
     }}>
       <Card sx={{
         maxWidth: 600,
         width: '100%',
+        maxHeight: 'calc(100vh - 120px)',
+        overflow: 'auto',
         background: `linear-gradient(135deg, ${palette.background}E0 0%, ${palette.primary}08 50%, ${palette.secondary}08 100%)`,
         border: `2px solid ${palette.border}40`,
         borderRadius: '16px',
         boxShadow: `0 8px 32px ${palette.border}30, inset 0 1px 0 ${palette.primary}20`,
         backdropFilter: 'blur(10px)',
       }}>
-        <CardContent sx={{ p: 4 }}>
+        <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+          {/* Error Display */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
           {/* Royalty-Free Music Info */}
           <Alert 
             icon={<InfoIcon />}
@@ -431,8 +593,9 @@ const MusicSection: React.FC = () => {
           <Box sx={{ mb: 2 }}>
             <Slider
               value={currentTime}
-              max={duration || 100}
+              max={duration > 0 ? duration : 100}
               onChange={handleSeek}
+              disabled={!duration || duration === 0}
               sx={{
                 color: palette.primary,
                 '& .MuiSlider-thumb': {
@@ -448,6 +611,15 @@ const MusicSection: React.FC = () => {
                 },
                 '& .MuiSlider-rail': {
                   backgroundColor: palette.border,
+                },
+                '&.Mui-disabled': {
+                  color: palette.border,
+                  '& .MuiSlider-thumb': {
+                    backgroundColor: palette.border,
+                  },
+                  '& .MuiSlider-track': {
+                    backgroundColor: palette.border,
+                  }
                 }
               }}
             />

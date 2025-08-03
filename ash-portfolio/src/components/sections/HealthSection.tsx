@@ -23,14 +23,10 @@ const HealthSection: React.FC = () => {
 
   const { statuses, isLoading, lastUpdated, refreshStatuses } = useGitHubStatus({
     repositories,
-    refreshInterval: 300000 // 5 minutes
+    refreshInterval: 900000 // 15 minutes
   });
 
   const getStatusIcon = (status: RepositoryStatus) => {
-    if (status.isLoading) {
-      return <CircularProgress size="3rem" sx={{ color: palette.secondary }} />;
-    }
-    
     if (status.error) {
       return <ErrorIcon sx={{ fontSize: '3rem', color: palette.accent }} />;
     }
@@ -112,7 +108,6 @@ const HealthSection: React.FC = () => {
           <Tooltip title="Refresh Status">
             <IconButton 
               onClick={refreshStatuses}
-              disabled={isLoading}
               sx={{ 
                 color: palette.secondary,
                 '&:hover': {
@@ -122,7 +117,7 @@ const HealthSection: React.FC = () => {
                 }
               }}
             >
-              {isLoading ? <CircularProgress size={24} /> : <RefreshIcon />}
+              <RefreshIcon />
             </IconButton>
           </Tooltip>
         </Box>
@@ -138,6 +133,20 @@ const HealthSection: React.FC = () => {
           }}
         >
           Real-time GitHub Actions build status monitoring
+        </Typography>
+
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: palette.text, 
+            mb: 2, 
+            textAlign: 'center',
+            fontFamily: 'monospace',
+            opacity: 0.6,
+            fontSize: '0.8rem'
+          }}
+        >
+          Note: GitHub API has rate limits. Data is cached for 10 minutes to reduce requests.
         </Typography>
 
         {lastUpdated && (
@@ -194,6 +203,16 @@ const HealthSection: React.FC = () => {
                   >
                     {status.repo.name}
                   </Typography>
+                  {status.isLoading && (
+                    <CircularProgress 
+                      size={16} 
+                      sx={{ 
+                        color: palette.secondary, 
+                        opacity: 0.6,
+                        mr: 1
+                      }} 
+                    />
+                  )}
                   <Tooltip title="View on GitHub">
                     <IconButton
                       size="small"
@@ -211,18 +230,32 @@ const HealthSection: React.FC = () => {
                     color: palette.text, 
                     mb: 2,
                     fontFamily: 'monospace',
-                    opacity: 0.8
+                    opacity: status.isLoading ? 0.6 : 0.8,
+                    fontStyle: status.isLoading ? 'italic' : 'normal'
                   }}
                 >
-                  {status.repo.description || 'No description available'}
+                  {status.isLoading 
+                    ? 'Loading repository information...' 
+                    : (status.repo.description || 'No description available')
+                  }
                 </Typography>
 
                 {status.error ? (
                   <Chip 
-                    label="API Error" 
+                    label={status.error.includes('rate limit') ? "Rate Limited" : "API Error"} 
                     color="error" 
                     size="small"
                     sx={{ mb: 2, fontFamily: 'monospace' }}
+                  />
+                ) : status.isLoading ? (
+                  <Chip 
+                    label="Loading..." 
+                    sx={{ 
+                      backgroundColor: palette.secondary + '20',
+                      color: palette.secondary,
+                      fontFamily: 'monospace',
+                      mb: 2
+                    }}
                   />
                 ) : status.latestRun ? (
                   <Box sx={{ mb: 2 }}>

@@ -5,12 +5,11 @@ import { colorPalettes } from '../store/slices/themeSlice';
 import AboutSection from './sections/AboutSection';
 import FunSection from './sections/FunSection';
 import HealthSection from './sections/HealthSection';
-import MusicSection from './sections/MusicSection';
+import SimpleMusicPlayer from './sections/SimpleMusicPlayer';
 
 const MainContent: React.FC = () => {
   const currentSection = useAppSelector((state) => state.navigation.currentSection);
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
-  const palette = colorPalettes[currentPalette];
 
   const renderSection = () => {
     switch (currentSection) {
@@ -21,7 +20,7 @@ const MainContent: React.FC = () => {
       case 'health':
         return <HealthSection />;
       case 'music':
-        return <MusicSection />;
+        return <SimpleMusicPlayer />;
       default:
         return <FunSection />;
     }

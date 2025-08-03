@@ -10,9 +10,9 @@ const AboutSection: React.FC = () => {
   const [currentCommand, setCurrentCommand] = useState(0);
 
   const commands = [
-    { command: 'whoami', output: 'Software Developer & Builder of Things' },
-    { command: 'cat skills.txt', output: 'CI/CD • Rapid Prototyping • End-to-End Architecture\nJava/SpringBoot • React/TypeScript • Docker' },
-    { command: 'echo $PHILOSOPHY', output: 'Good software connects the dots between what users need and what technology can deliver' }
+    { command: '>whoami', output: 'Software Developer & Builder of Things' },
+    { command: '> cat skills.txt', output: 'CI/CD • Rapid Prototyping • End-to-End Architecture\nJava/SpringBoot • React/TypeScript • Docker' },
+    { command: '> echo $PHILOSOPHY', output: 'Good software connects the dots between what users need and what technology can deliver' }
   ];
 
   useEffect(() => {

@@ -25,13 +25,14 @@
     "react-dom": "^19.1.1",
     "react-redux": "^9.2.0",
     "react-scripts": "5.0.1",
+    "serve": "^14.2.4",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -H 0.0.0.0",
+    "start": "npx serve out",
     "build:pages": "next build",
     "deploy:pages": "wrangler pages deploy out --project-name=ashhill-portfolio",
     "preview:pages": "wrangler pages dev out"

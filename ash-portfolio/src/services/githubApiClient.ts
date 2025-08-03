@@ -20,15 +20,37 @@ export class GitHubApiClientService {
   }
 
   static async getRepository(owner: string, repo: string): Promise<GitHubRepository> {
-    const response = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${repo}`, {
-      headers: this.getHeaders(),
-    });
+    try {
+      const response = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${repo}`, {
+        headers: this.getHeaders(),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch repository: ${response.statusText}`);
+      if (!response.ok) {
+        // Log the specific error for debugging
+        console.warn(`GitHub API error for ${owner}/${repo}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
+        // If rate limited, provide a more specific error
+        if (response.status === 403) {
+          const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+          const rateLimitReset = response.headers.get('x-ratelimit-reset');
+          throw new Error(`GitHub API rate limit exceeded. Remaining: ${rateLimitRemaining}, Reset: ${rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString() : 'unknown'}`);
+        }
+
+        throw new Error(`Failed to fetch repository: ${response.status} ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      // If it's a network error or other fetch error, provide a fallback
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error(`Network error while fetching repository data`);
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   static async getWorkflowRuns(
@@ -37,20 +59,42 @@ export class GitHubApiClientService {
     branch: string = 'main',
     perPage: number = 1
   ): Promise<GitHubWorkflowRunsResponse> {
-    const url = new URL(`${GITHUB_API_BASE}/repos/${owner}/${repo}/actions/runs`);
-    url.searchParams.set('branch', branch);
-    url.searchParams.set('per_page', perPage.toString());
-    url.searchParams.set('status', 'completed');
+    try {
+      const url = new URL(`${GITHUB_API_BASE}/repos/${owner}/${repo}/actions/runs`);
+      url.searchParams.set('branch', branch);
+      url.searchParams.set('per_page', perPage.toString());
+      url.searchParams.set('status', 'completed');
 
-    const response = await fetch(url.toString(), {
-      headers: this.getHeaders(),
-    });
+      const response = await fetch(url.toString(), {
+        headers: this.getHeaders(),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch workflow runs: ${response.statusText}`);
+      if (!response.ok) {
+        // Log the specific error for debugging
+        console.warn(`GitHub API error for workflow runs ${owner}/${repo}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
+        // If rate limited, provide a more specific error
+        if (response.status === 403) {
+          const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+          const rateLimitReset = response.headers.get('x-ratelimit-reset');
+          throw new Error(`GitHub API rate limit exceeded. Remaining: ${rateLimitRemaining}, Reset: ${rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString() : 'unknown'}`);
+        }
+
+        throw new Error(`Failed to fetch workflow runs: ${response.status} ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      // If it's a network error or other fetch error, provide a fallback
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error(`Network error while fetching workflow runs`);
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   static async getLatestWorkflowRun(owner: string, repo: string, branch: string = 'main') {

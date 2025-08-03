@@ -1,6 +1,5 @@
 import { Algorithm } from './algorithm';
 import { Path } from '../data/Car';
-import { GRID_ROWS, GRID_COLS } from '../data/Grid';
 
 export class BFSAlgorithm implements Algorithm {
   name = 'BFS';
@@ -9,7 +8,9 @@ export class BFSAlgorithm implements Algorithm {
   findPath(
     start: [number, number],
     goal: [number, number],
-    obstaclesSet: Set<string>
+    obstaclesSet: Set<string>,
+    gridRows: number = 50,
+    gridCols: number = 50
   ): Path | null {
     const [sr, sc] = start;
     const [gr, gc] = goal;
@@ -17,7 +18,7 @@ export class BFSAlgorithm implements Algorithm {
     // If start and goal are the same, return a path with just that position
     if (sr === gr && sc === gc) return [[sr, sc]];
     
-    const rows = GRID_ROWS, cols = GRID_COLS;
+    const rows = gridRows, cols = gridCols;
     const visited: boolean[][] = Array.from({ length: rows }, () => Array(cols).fill(false));
     const queue: [number, number][] = [];
     const parent: { [key: string]: string | null } = {};  // to reconstruct path: key = "r,c", value = parent "r,c"
