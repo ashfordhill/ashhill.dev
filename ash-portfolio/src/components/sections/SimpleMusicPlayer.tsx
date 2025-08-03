@@ -25,7 +25,7 @@ import { useAppSelector } from '../../store/hooks';
 import { colorPalettes } from '../../store/slices/themeSlice';
 
 interface AudioVisualizerProps {
-  audioRef: React.RefObject<HTMLAudioElement>;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
   isPlaying: boolean;
   palette: any;
 }
