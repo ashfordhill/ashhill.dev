@@ -1,35 +1,85 @@
 import React from 'react';
-import { Box, Typography, Paper, Container, Card, CardContent } from '@mui/material';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import SpaIcon from '@mui/icons-material/Spa';
-import LocalDiningIcon from '@mui/icons-material/LocalDining';
+import { Box, Typography, Paper, Container, Card, CardContent, Chip, IconButton, Tooltip, CircularProgress } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import PendingIcon from '@mui/icons-material/Pending';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import LaunchIcon from '@mui/icons-material/Launch';
+import GitHubIcon from '@mui/icons-material/GitHub';
 import { useAppSelector } from '../../store/hooks';
 import { colorPalettes } from '../../store/slices/themeSlice';
+import { useGitHubStatus } from '../../hooks/useGitHubStatus';
+import { RepositoryStatus } from '../../types/github';
 
 const HealthSection: React.FC = () => {
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
   const palette = colorPalettes[currentPalette];
 
-  const healthCards = [
-    {
-      icon: <FitnessCenterIcon sx={{ fontSize: '3rem', color: palette.primary }} />,
-      title: 'Fitness Tracking',
-      description: 'Monitor your workout progress and maintain consistency in your fitness journey.',
-      features: ['Exercise logging', 'Progress tracking', 'Goal setting']
-    },
-    {
-      icon: <SpaIcon sx={{ fontSize: '3rem', color: palette.secondary }} />,
-      title: 'Wellness Monitoring',
-      description: 'Track your mental health and wellness metrics for a balanced lifestyle.',
-      features: ['Mood tracking', 'Sleep analysis', 'Stress management']
-    },
-    {
-      icon: <LocalDiningIcon sx={{ fontSize: '3rem', color: palette.accent }} />,
-      title: 'Nutrition Planning',
-      description: 'Plan and track your nutrition intake for optimal health outcomes.',
-      features: ['Meal planning', 'Calorie tracking', 'Nutrient analysis']
-    }
+  const repositories = [
+    { owner: 'ashfordhill', repo: 'dynamic-integration-tester', branch: 'main' },
+    { owner: 'ashfordhill', repo: 'puppeteer-action', branch: 'main' },
+    { owner: 'ashfordhill', repo: 'ashhill.dev', branch: 'main' }
   ];
+
+  const { statuses, isLoading, lastUpdated, refreshStatuses } = useGitHubStatus({
+    repositories,
+    refreshInterval: 300000 // 5 minutes
+  });
+
+  const getStatusIcon = (status: RepositoryStatus) => {
+    if (status.isLoading) {
+      return <CircularProgress size="3rem" sx={{ color: palette.secondary }} />;
+    }
+    
+    if (status.error) {
+      return <ErrorIcon sx={{ fontSize: '3rem', color: palette.accent }} />;
+    }
+
+    if (!status.latestRun) {
+      return <PendingIcon sx={{ fontSize: '3rem', color: palette.text }} />;
+    }
+
+    switch (status.latestRun.conclusion) {
+      case 'success':
+        return <CheckCircleIcon sx={{ fontSize: '3rem', color: '#4CAF50' }} />;
+      case 'failure':
+        return <ErrorIcon sx={{ fontSize: '3rem', color: '#F44336' }} />;
+      case 'cancelled':
+        return <PendingIcon sx={{ fontSize: '3rem', color: '#FF9800' }} />;
+      default:
+        return <PendingIcon sx={{ fontSize: '3rem', color: palette.text }} />;
+    }
+  };
+
+  const getStatusColor = (status: RepositoryStatus) => {
+    if (status.error) return palette.accent;
+    if (!status.latestRun) return palette.text;
+    
+    switch (status.latestRun.conclusion) {
+      case 'success': return '#4CAF50';
+      case 'failure': return '#F44336';
+      case 'cancelled': return '#FF9800';
+      default: return palette.text;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getTimeSince = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) return `${diffDays}d ago`;
+    if (diffHours > 0) return `${diffHours}h ago`;
+    if (diffMins > 0) return `${diffMins}m ago`;
+    return 'Just now';
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -44,42 +94,75 @@ const HealthSection: React.FC = () => {
           backdropFilter: 'blur(10px)',
         }}
       >
-        <Typography 
-          variant="h3" 
-          sx={{ 
-            color: palette.primary, 
-            mb: 3, 
-            fontFamily: 'monospace',
-            textShadow: `0 0 15px ${palette.primary}80`,
-            textAlign: 'center',
-            textTransform: 'uppercase',
-            letterSpacing: '2px'
-          }}
-        >
-          Health & Wellness
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+          <Typography 
+            variant="h3" 
+            sx={{ 
+              color: palette.primary, 
+              fontFamily: 'monospace',
+              textShadow: `0 0 15px ${palette.primary}80`,
+              textAlign: 'center',
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              mr: 2
+            }}
+          >
+            CI/CD Dashboard
+          </Typography>
+          <Tooltip title="Refresh Status">
+            <IconButton 
+              onClick={refreshStatuses}
+              disabled={isLoading}
+              sx={{ 
+                color: palette.secondary,
+                '&:hover': {
+                  color: palette.primary,
+                  transform: 'rotate(180deg)',
+                  transition: 'all 0.3s ease'
+                }
+              }}
+            >
+              {isLoading ? <CircularProgress size={24} /> : <RefreshIcon />}
+            </IconButton>
+          </Tooltip>
+        </Box>
         
         <Typography 
           variant="h6" 
           sx={{ 
             color: palette.text, 
-            mb: 4, 
+            mb: 2, 
             textAlign: 'center',
             fontFamily: 'monospace',
             opacity: 0.9
           }}
         >
-          Comprehensive health tracking and wellness management tools
+          Real-time GitHub Actions build status monitoring
         </Typography>
+
+        {lastUpdated && (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: palette.text, 
+              mb: 4, 
+              textAlign: 'center',
+              fontFamily: 'monospace',
+              opacity: 0.7
+            }}
+          >
+            Last updated: {formatDate(lastUpdated.toISOString())}
+          </Typography>
+        )}
 
         <Box sx={{ 
           display: 'grid', 
           gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
           gap: 3 
         }}>
-          {healthCards.map((card, index) => (
+          {statuses.map((status, index) => (
             <Card 
-              key={index}
+              key={status.repo.full_name}
               sx={{ 
                 height: '100%',
                 backgroundColor: palette.background + 'CC',
@@ -89,44 +172,141 @@ const HealthSection: React.FC = () => {
                 transition: 'all 0.3s ease',
                 '&:hover': {
                   transform: 'translateY(-5px)',
-                  boxShadow: `0 5px 25px ${palette.primary}40`,
-                  borderColor: palette.primary,
+                  boxShadow: `0 5px 25px ${getStatusColor(status)}40`,
+                  borderColor: getStatusColor(status),
                 }
               }}
             >
               <CardContent sx={{ p: 3, textAlign: 'center' }}>
                 <Box sx={{ mb: 2 }}>
-                  {card.icon}
+                  {getStatusIcon(status)}
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <Typography 
+                    variant="h5" 
+                    sx={{ 
+                      color: palette.secondary, 
+                      fontFamily: 'monospace',
+                      textShadow: `0 0 5px ${palette.secondary}60`,
+                      mr: 1
+                    }}
+                  >
+                    {status.repo.name}
+                  </Typography>
+                  <Tooltip title="View on GitHub">
+                    <IconButton
+                      size="small"
+                      onClick={() => window.open(status.repo.html_url, '_blank')}
+                      sx={{ color: palette.text, opacity: 0.7 }}
+                    >
+                      <LaunchIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
                 
                 <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    color: palette.secondary, 
-                    mb: 2,
-                    fontFamily: 'monospace',
-                    textShadow: `0 0 5px ${palette.secondary}60`
-                  }}
-                >
-                  {card.title}
-                </Typography>
-                
-                <Typography 
-                  variant="body1" 
+                  variant="body2" 
                   sx={{ 
                     color: palette.text, 
-                    mb: 3,
+                    mb: 2,
                     fontFamily: 'monospace',
-                    opacity: 0.9
+                    opacity: 0.8
                   }}
                 >
-                  {card.description}
+                  {status.repo.description || 'No description available'}
                 </Typography>
 
-                <Box sx={{ textAlign: 'left' }}>
-                  {card.features.map((feature, featureIndex) => (
+                {status.error ? (
+                  <Chip 
+                    label="API Error" 
+                    color="error" 
+                    size="small"
+                    sx={{ mb: 2, fontFamily: 'monospace' }}
+                  />
+                ) : status.latestRun ? (
+                  <Box sx={{ mb: 2 }}>
+                    <Chip 
+                      label={status.latestRun.conclusion || 'Unknown'}
+                      sx={{ 
+                        backgroundColor: getStatusColor(status) + '20',
+                        color: getStatusColor(status),
+                        fontFamily: 'monospace',
+                        mb: 1
+                      }}
+                    />
                     <Typography 
-                      key={featureIndex}
+                      variant="body2" 
+                      sx={{ 
+                        color: palette.text, 
+                        fontFamily: 'monospace',
+                        opacity: 0.7
+                      }}
+                    >
+                      Run #{status.latestRun.run_number}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Chip 
+                    label="No Runs" 
+                    sx={{ 
+                      backgroundColor: palette.text + '20',
+                      color: palette.text,
+                      fontFamily: 'monospace',
+                      mb: 2
+                    }}
+                  />
+                )}
+
+                <Box sx={{ textAlign: 'left' }}>
+                  {status.latestRun && (
+                    <>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: palette.accent, 
+                          mb: 1,
+                          fontFamily: 'monospace',
+                          '&:before': {
+                            content: '"▶ "',
+                            color: palette.primary,
+                          }
+                        }}
+                      >
+                        {status.latestRun.name}
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: palette.accent, 
+                          mb: 1,
+                          fontFamily: 'monospace',
+                          '&:before': {
+                            content: '"▶ "',
+                            color: palette.primary,
+                          }
+                        }}
+                      >
+                        {getTimeSince(status.latestRun.updated_at)}
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: palette.accent, 
+                          mb: 1,
+                          fontFamily: 'monospace',
+                          '&:before': {
+                            content: '"▶ "',
+                            color: palette.primary,
+                          }
+                        }}
+                      >
+                        Branch: {status.latestRun.head_branch}
+                      </Typography>
+                    </>
+                  )}
+                  {status.error && (
+                    <Typography 
                       variant="body2" 
                       sx={{ 
                         color: palette.accent, 
@@ -138,10 +318,27 @@ const HealthSection: React.FC = () => {
                         }
                       }}
                     >
-                      {feature}
+                      {status.error}
                     </Typography>
-                  ))}
+                  )}
                 </Box>
+
+                {status.latestRun && (
+                  <Box sx={{ mt: 2 }}>
+                    <Tooltip title="View Workflow Run">
+                      <IconButton
+                        size="small"
+                        onClick={() => window.open(status.latestRun!.html_url, '_blank')}
+                        sx={{ 
+                          color: palette.secondary,
+                          '&:hover': { color: palette.primary }
+                        }}
+                      >
+                        <GitHubIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -173,7 +370,7 @@ const HealthSection: React.FC = () => {
               fontFamily: 'monospace'
             }}
           >
-            Advanced health analytics, AI-powered recommendations, and integrated wearable device support.
+            Advanced workflow analytics, deployment tracking, and automated notifications for build failures.
           </Typography>
         </Box>
       </Paper>

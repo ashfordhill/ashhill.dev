@@ -5,6 +5,7 @@ import { colorPalettes } from '../store/slices/themeSlice';
 import AboutSection from './sections/AboutSection';
 import FunSection from './sections/FunSection';
 import HealthSection from './sections/HealthSection';
+import MusicSection from './sections/MusicSection';
 
 const MainContent: React.FC = () => {
   const currentSection = useAppSelector((state) => state.navigation.currentSection);
@@ -19,6 +20,8 @@ const MainContent: React.FC = () => {
         return <FunSection />;
       case 'health':
         return <HealthSection />;
+      case 'music':
+        return <MusicSection />;
       default:
         return <FunSection />;
     }

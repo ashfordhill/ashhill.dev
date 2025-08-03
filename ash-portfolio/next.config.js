@@ -9,13 +9,7 @@ const nextConfig = {
   },
   
   // Ensure trailing slashes are handled consistently
-  trailingSlash: true,
-  
-  // Disable build optimization that can cause issues
-  swcMinify: false,
-  
-  // Disable telemetry
-  telemetry: false,
+  trailingSlash: true
 };
 
 module.exports = nextConfig;

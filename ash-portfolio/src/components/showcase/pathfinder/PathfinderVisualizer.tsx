@@ -136,11 +136,11 @@ const PathfinderVisualizer: React.FC = () => {
     const cols = grid.cols;
     
     // Calculate responsive cell size based on available space
-    const maxWidth = typeof window !== 'undefined' ? window.innerWidth * 0.6 : 800; // 60% of screen width for grid
-    const maxHeight = typeof window !== 'undefined' ? window.innerHeight * 0.6 : 600; // 60% of screen height for grid
-    const cellSizeByWidth = Math.floor((maxWidth - 20) / cols); // Account for padding
-    const cellSizeByHeight = Math.floor((maxHeight - 20) / rows);
-    const cellSize = Math.max(12, Math.min(20, Math.min(cellSizeByWidth, cellSizeByHeight))); // Increased minimum size for better tile visibility
+    const maxWidth = typeof window !== 'undefined' ? window.innerWidth * 0.65 : 800; // 65% of screen width for grid
+    const maxHeight = typeof window !== 'undefined' ? window.innerHeight * 0.85 : 600; // 85% of screen height for grid
+    const cellSizeByWidth = Math.floor((maxWidth - 40) / cols); // Account for padding and sidebar
+    const cellSizeByHeight = Math.floor((maxHeight - 40) / rows);
+    const cellSize = Math.max(10, Math.min(18, Math.min(cellSizeByWidth, cellSizeByHeight))); // Optimized for viewport fit
     
     return (
       <Box 
@@ -240,7 +240,8 @@ const PathfinderVisualizer: React.FC = () => {
 
   return (
     <Box sx={{ 
-      height: '100%',
+      height: '100vh',
+      maxHeight: '100vh',
       backgroundColor: palette.background,
       color: palette.text,
       fontFamily: 'monospace',
@@ -254,7 +255,8 @@ const PathfinderVisualizer: React.FC = () => {
       <Box sx={{ 
         display: 'flex', 
         flex: 1,
-        height: '100%'
+        height: '100%',
+        minHeight: 0
       }}>
         {/* Left Sidebar - Controls and Metrics */}
         <Box sx={{
@@ -446,33 +448,34 @@ const PathfinderVisualizer: React.FC = () => {
             </Box>
           </Box>
 
-          {/* Metrics Section */}
+          {/* Metrics Section - Smaller */}
           <Box sx={{
             border: `2px solid ${palette.border}80`,
             borderRadius: '8px',
             p: { xs: 1, sm: 1.5 },
             boxShadow: `0 0 8px ${palette.border}25`,
-            flex: '1 1 auto',
-            minHeight: 0
+            flex: '0 0 auto'
           }}>
             <Typography variant="h6" sx={{ 
               color: palette.secondary, 
-              mb: 2, 
+              mb: 1, 
               fontFamily: 'monospace',
-              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+              fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
               textShadow: `0 0 3px ${palette.secondary}60`
             }}>
               METRICS
             </Typography>
             
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography sx={{ color: palette.text, fontFamily: 'monospace' }}>
-                <span style={{ color: palette.accent }}>Cars En Route:</span><br />
-                <span style={{ color: palette.primary, fontSize: '1.2rem', fontWeight: 'bold' }}>
-                  {cars.length}
-                </span>
-              </Typography>
-            </Box>
+            <Typography sx={{ 
+              color: palette.text, 
+              fontFamily: 'monospace',
+              fontSize: { xs: '0.8rem', sm: '0.9rem' }
+            }}>
+              <span style={{ color: palette.accent }}>Cars En Route:</span>{' '}
+              <span style={{ color: palette.primary, fontSize: '1.1rem', fontWeight: 'bold' }}>
+                {cars.length}
+              </span>
+            </Typography>
           </Box>
         </Box>
 

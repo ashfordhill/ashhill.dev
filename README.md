@@ -12,27 +12,13 @@ Experimenting with Zencoder.
 
 ![](./timeline/timeline.gif)
 
-# Showcase
-
-## Pathfinder
-
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/pathfinding-visualizer.git
-   cd pathfinding-visualizer
-   ```
+Use pnpm locally to cache `node_modules` for cache'd node package installs:
 
-2. Install dependencies:
-   ```bash
-   cd ash-portfolio
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-4. Open browser and navigate to `http://localhost:3000`
+``` sh
+npm i -g pnpm
+cd ash-portfolio
+pnpm i
+npm run dev
+```

@@ -39,6 +39,7 @@ const TopNavigation: React.FC = () => {
     { key: 'about', label: 'ABOUT' },
     { key: 'fun', label: 'PATHFINDER' },
     { key: 'health', label: 'HEALTH' },
+    { key: 'music', label: 'MUSIC' },
   ];
 
   return (

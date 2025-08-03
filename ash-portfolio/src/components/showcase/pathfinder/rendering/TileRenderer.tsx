@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import { CityTile, TileType, getTilePath, TILE_INDICES, getRandomTile } from '../data/TileMap';
+import { CityTile, TileType, getTilePath, TILE_INDICES, getRandomTile, getTilePosition, SPRITE_SHEET_CONFIG } from '../data/TileMap';
 import { GridPosition } from '../data/Grid';
 import { Car } from '../data/Car';
 
@@ -33,6 +33,7 @@ const TileRenderer: React.FC<TileRendererProps> = ({
 }) => {
   // Determine what to render
   let backgroundImage = '';
+  let backgroundPosition = '';
   let overlayContent: string | null = null;
   let overlayColor = 'transparent';
   let glowColor = 'transparent';
@@ -40,7 +41,9 @@ const TileRenderer: React.FC<TileRendererProps> = ({
 
   // Base tile (road, grass, etc.)
   if (cityTile) {
-    backgroundImage = getTilePath(cityTile.tileIndex);
+    const tilePos = getTilePosition(cityTile.tileIndex);
+    backgroundImage = `url(${getTilePath(cityTile.tileIndex)})`;
+    backgroundPosition = `-${tilePos.x}px -${tilePos.y}px`;
   }
 
   // Special overlays for spawn points and destinations
@@ -65,9 +68,9 @@ const TileRenderer: React.FC<TileRendererProps> = ({
         position: 'relative',
         cursor,
         transition: 'all 0.1s ease',
-        backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundImage: backgroundImage || 'none',
+        backgroundSize: `${SPRITE_SHEET_CONFIG.columns * SPRITE_SHEET_CONFIG.tileSize}px ${SPRITE_SHEET_CONFIG.rows * SPRITE_SHEET_CONFIG.tileSize}px`,
+        backgroundPosition: backgroundPosition || 'center',
         backgroundColor: !backgroundImage ? palette.grid : 'transparent',
         border: `1px solid ${palette.border}40`,
         boxShadow: glowColor !== 'transparent' ? `0 0 3px ${glowColor}` : 'none',
@@ -138,15 +141,16 @@ const CarRenderer: React.FC<CarRendererProps> = ({ car, cellSize, palette }) => 
   // Get car sprite tile index based on car ID (for variety)
   const getCarTileIndex = (carId: number): number => {
     const carTiles = [
-      TILE_INDICES.SPECIAL.CAR_RED[0],
-      TILE_INDICES.SPECIAL.CAR_BLUE[0], 
-      TILE_INDICES.SPECIAL.CAR_GREEN[0],
-      TILE_INDICES.SPECIAL.CAR_YELLOW[0]
+      getRandomTile(TILE_INDICES.SPECIAL.CAR_RED),
+      getRandomTile(TILE_INDICES.SPECIAL.CAR_BLUE), 
+      getRandomTile(TILE_INDICES.SPECIAL.CAR_GREEN),
+      getRandomTile(TILE_INDICES.SPECIAL.CAR_YELLOW)
     ];
     return carTiles[carId % carTiles.length];
   };
 
   const carTileIndex = getCarTileIndex(car.id);
+  const carTilePos = getTilePosition(carTileIndex);
   const carImagePath = getTilePath(carTileIndex);
 
   return (
@@ -158,9 +162,9 @@ const CarRenderer: React.FC<CarRendererProps> = ({ car, cellSize, palette }) => 
         width: `${cellSize}px`,
         height: `${cellSize}px`,
         backgroundImage: `url(${carImagePath})`,
-        backgroundSize: 'contain',
+        backgroundSize: `${SPRITE_SHEET_CONFIG.columns * SPRITE_SHEET_CONFIG.tileSize}px ${SPRITE_SHEET_CONFIG.rows * SPRITE_SHEET_CONFIG.tileSize}px`,
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
+        backgroundPosition: `-${carTilePos.x}px -${carTilePos.y}px`,
         transform: `rotate(${getRotation(car.direction)}deg)`,
         transition: 'transform 0.2s ease',
         zIndex: 100,
