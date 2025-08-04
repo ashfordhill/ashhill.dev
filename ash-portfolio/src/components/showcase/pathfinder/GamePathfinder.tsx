@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Typography, Button, Select, MenuItem, FormControl, FormControlLabel, Switch } from '@mui/material';
 import { useAppSelector } from '../../../store/hooks';
 import { colorPalettes } from '../../../store/slices/themeSlice';
+import { Position, CellType, Algorithm, getPathfindingFunction, ALGORITHM_NAMES } from './algorithms';
 
 // Icons
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -18,12 +19,6 @@ const CELL_SIZE = 20;
 const MAX_CARS = 8;
 const ANIMATION_SPEED = 150; // ms between moves
 
-// Position interface
-interface Position {
-  x: number;
-  y: number;
-}
-
 // Car interface
 interface Car {
   id: number;
@@ -35,17 +30,6 @@ interface Car {
   pathIndex: number;
 }
 
-// Cell types
-enum CellType {
-  WALL = 0,
-  PATH = 1,
-  SPAWN = 2,
-  TARGET = 3
-}
-
-// Pathfinding algorithms
-type Algorithm = 'BFS' | 'DFS' | 'A*' | 'Dijkstra';
-
 const GamePathfinder: React.FC = () => {
   // Get current palette from Redux store
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
@@ -55,7 +39,7 @@ const GamePathfinder: React.FC = () => {
   const [grid, setGrid] = useState<CellType[][]>([]);
   const [cars, setCars] = useState<Car[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [algorithm, setAlgorithm] = useState<Algorithm>('DFS');
+  const [algorithm, setAlgorithm] = useState<Algorithm>('BFS');
   const [showPaths, setShowPaths] = useState(true);
   const [spawnPoints] = useState<Position[]>([
     { x: 1, y: 5 },
@@ -177,233 +161,24 @@ const GamePathfinder: React.FC = () => {
     setGrid(newGrid);
   }, [spawnPoints, targetPoint]);
 
-  // BFS pathfinding
-  const findPathBFS = useCallback((start: Position, end: Position): Position[] => {
-    const queue: { pos: Position; path: Position[] }[] = [{ pos: start, path: [start] }];
-    const visited = new Set<string>();
-    visited.add(`${start.x},${start.y}`);
-
-    while (queue.length > 0) {
-      const { pos, path } = queue.shift()!;
-
-      if (pos.x === end.x && pos.y === end.y) {
-        return path;
-      }
-
-      const neighbors = [
-        { x: pos.x + 1, y: pos.y },
-        { x: pos.x - 1, y: pos.y },
-        { x: pos.x, y: pos.y + 1 },
-        { x: pos.x, y: pos.y - 1 }
-      ];
-
-      for (const neighbor of neighbors) {
-        const key = `${neighbor.x},${neighbor.y}`;
-        if (
-          neighbor.x >= 0 && neighbor.x < GRID_WIDTH &&
-          neighbor.y >= 0 && neighbor.y < GRID_HEIGHT &&
-          !visited.has(key) &&
-          grid[neighbor.y][neighbor.x] !== CellType.WALL
-        ) {
-          visited.add(key);
-          queue.push({ pos: neighbor, path: [...path, neighbor] });
-        }
-      }
-    }
-
-    return [];
-  }, [grid]);
-
-  // DFS pathfinding
-  const findPathDFS = useCallback((start: Position, end: Position): Position[] => {
-    const visited = new Set<string>();
-    
-    const dfs = (pos: Position, path: Position[]): Position[] | null => {
-      const key = `${pos.x},${pos.y}`;
-      if (visited.has(key)) return null;
-      visited.add(key);
-
-      if (pos.x === end.x && pos.y === end.y) {
-        return path;
-      }
-
-      const neighbors = [
-        { x: pos.x + 1, y: pos.y },
-        { x: pos.x - 1, y: pos.y },
-        { x: pos.x, y: pos.y + 1 },
-        { x: pos.x, y: pos.y - 1 }
-      ];
-
-      for (const neighbor of neighbors) {
-        if (
-          neighbor.x >= 0 && neighbor.x < GRID_WIDTH &&
-          neighbor.y >= 0 && neighbor.y < GRID_HEIGHT &&
-          grid[neighbor.y][neighbor.x] !== CellType.WALL
-        ) {
-          const result = dfs(neighbor, [...path, neighbor]);
-          if (result) return result;
-        }
-      }
-
-      return null;
-    };
-
-    return dfs(start, [start]) || [];
-  }, [grid]);
-
-  // A* pathfinding
-  const findPathAStar = useCallback((start: Position, end: Position): Position[] => {
-    const openSet: { pos: Position; path: Position[]; f: number; g: number }[] = [];
-    const closedSet = new Set<string>();
-    
-    const heuristic = (a: Position, b: Position) => 
-      Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-
-    openSet.push({ pos: start, path: [start], f: heuristic(start, end), g: 0 });
-
-    while (openSet.length > 0) {
-      openSet.sort((a, b) => a.f - b.f);
-      const current = openSet.shift()!;
-      const key = `${current.pos.x},${current.pos.y}`;
-
-      if (closedSet.has(key)) continue;
-      closedSet.add(key);
-
-      if (current.pos.x === end.x && current.pos.y === end.y) {
-        return current.path;
-      }
-
-      const neighbors = [
-        { x: current.pos.x + 1, y: current.pos.y },
-        { x: current.pos.x - 1, y: current.pos.y },
-        { x: current.pos.x, y: current.pos.y + 1 },
-        { x: current.pos.x, y: current.pos.y - 1 }
-      ];
-
-      for (const neighbor of neighbors) {
-        const neighborKey = `${neighbor.x},${neighbor.y}`;
-        if (
-          neighbor.x >= 0 && neighbor.x < GRID_WIDTH &&
-          neighbor.y >= 0 && neighbor.y < GRID_HEIGHT &&
-          !closedSet.has(neighborKey) &&
-          grid[neighbor.y][neighbor.x] !== CellType.WALL
-        ) {
-          const g = current.g + 1;
-          const h = heuristic(neighbor, end);
-          const f = g + h;
-          
-          openSet.push({ 
-            pos: neighbor, 
-            path: [...current.path, neighbor], 
-            f, 
-            g 
-          });
-        }
-      }
-    }
-
-    return [];
-  }, [grid]);
-
-  // Dijkstra pathfinding
-  const findPathDijkstra = useCallback((start: Position, end: Position): Position[] => {
-    const distances = new Map<string, number>();
-    const previous = new Map<string, Position | null>();
-    const unvisited = new Set<string>();
-
-    // Initialize
-    for (let y = 0; y < GRID_HEIGHT; y++) {
-      for (let x = 0; x < GRID_WIDTH; x++) {
-        if (grid[y][x] !== CellType.WALL) {
-          const key = `${x},${y}`;
-          distances.set(key, Infinity);
-          previous.set(key, null);
-          unvisited.add(key);
-        }
-      }
-    }
-
-    const startKey = `${start.x},${start.y}`;
-    distances.set(startKey, 0);
-
-    while (unvisited.size > 0) {
-      // Find unvisited node with minimum distance
-      let current: string | null = null;
-      let minDistance = Infinity;
-      
-      const unvisitedArray = Array.from(unvisited);
-      for (let i = 0; i < unvisitedArray.length; i++) {
-        const node = unvisitedArray[i];
-        const dist = distances.get(node) || Infinity;
-        if (dist < minDistance) {
-          minDistance = dist;
-          current = node;
-        }
-      }
-
-      if (!current || minDistance === Infinity) break;
-
-      unvisited.delete(current);
-      const coords = current.split(',');
-      const x = parseInt(coords[0]);
-      const y = parseInt(coords[1]);
-
-      if (x === end.x && y === end.y) {
-        // Reconstruct path
-        const path: Position[] = [];
-        let currentPos: Position | null = { x, y };
-        
-        while (currentPos) {
-          path.unshift(currentPos);
-          const key: string = `${currentPos.x},${currentPos.y}`;
-          currentPos = previous.get(key) || null;
-        }
-        
-        return path;
-      }
-
-      const neighbors = [
-        { x: x + 1, y },
-        { x: x - 1, y },
-        { x, y: y + 1 },
-        { x, y: y - 1 }
-      ];
-
-      for (const neighbor of neighbors) {
-        const neighborKey = `${neighbor.x},${neighbor.y}`;
-        if (unvisited.has(neighborKey)) {
-          const alt = (distances.get(current) || 0) + 1;
-          if (alt < (distances.get(neighborKey) || Infinity)) {
-            distances.set(neighborKey, alt);
-            previous.set(neighborKey, { x, y });
-          }
-        }
-      }
-    }
-
-    return [];
-  }, [grid]);
-
-  // Get pathfinding function based on algorithm
-  const getPathfindingFunction = useCallback(() => {
-    switch (algorithm) {
-      case 'BFS': return findPathBFS;
-      case 'DFS': return findPathDFS;
-      case 'A*': return findPathAStar;
-      case 'Dijkstra': return findPathDijkstra;
-      default: return findPathBFS;
-    }
-  }, [algorithm, findPathBFS, findPathDFS, findPathAStar, findPathDijkstra]);
-
   // Initialize cars
-  const initializeCars = useCallback(() => {
+  const initializeCars = useCallback((algorithmToUse?: Algorithm) => {
     const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff', '#ff8844', '#8844ff'];
     const newCars: Car[] = [];
+    
+    // Use the provided algorithm or fall back to the current state
+    const currentAlgorithm = algorithmToUse || algorithm;
+    
+    console.log('Initializing cars with algorithm:', currentAlgorithm);
 
     for (let i = 0; i < Math.min(MAX_CARS, spawnPoints.length * 3); i++) {
       const spawnPoint = spawnPoints[i % spawnPoints.length];
-      const pathfinder = getPathfindingFunction();
-      const path = pathfinder(spawnPoint, targetPoint);
+      const pathfinder = getPathfindingFunction(currentAlgorithm);
+      const path = pathfinder(spawnPoint, targetPoint, {
+        grid,
+        gridWidth: GRID_WIDTH,
+        gridHeight: GRID_HEIGHT
+      });
       
       newCars.push({
         id: i,
@@ -418,7 +193,7 @@ const GamePathfinder: React.FC = () => {
 
     setCars(newCars);
     carsRef.current = newCars;
-  }, [spawnPoints, targetPoint, getPathfindingFunction]);
+  }, [spawnPoints, targetPoint, algorithm, grid]);
 
   // Animation loop
   const animate = useCallback(() => {
@@ -427,10 +202,14 @@ const GamePathfinder: React.FC = () => {
     setCars(prevCars => {
       const newCars = prevCars.map(car => {
         if (car.path.length === 0 || car.pathIndex >= car.path.length - 1) {
-          // Car reached target, respawn
-          const pathfinder = getPathfindingFunction();
+          // Car reached target, respawn with current algorithm
+          const pathfinder = getPathfindingFunction(algorithm);
           const spawnPoint = spawnPoints[car.id % spawnPoints.length];
-          const newPath = pathfinder(spawnPoint, targetPoint);
+          const newPath = pathfinder(spawnPoint, targetPoint, {
+            grid,
+            gridWidth: GRID_WIDTH,
+            gridHeight: GRID_HEIGHT
+          });
           
           return {
             ...car,
@@ -460,19 +239,24 @@ const GamePathfinder: React.FC = () => {
     });
 
     animationRef.current = setTimeout(animate, ANIMATION_SPEED);
-  }, [isRunning, getPathfindingFunction, spawnPoints, targetPoint]);
+  }, [isRunning, algorithm, spawnPoints, targetPoint, grid]);
 
   // Initialize grid on mount
   useEffect(() => {
     initializeGrid();
   }, [initializeGrid]);
 
-  // Initialize cars when grid changes
+  // Initialize cars when grid changes or algorithm changes
   useEffect(() => {
     if (grid.length > 0) {
-      initializeCars();
+      // Small delay to ensure all state updates are complete
+      const timeoutId = setTimeout(() => {
+        initializeCars();
+      }, 10);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [grid, initializeCars]);
+  }, [grid, algorithm, initializeCars]);
 
   // Start/stop animation
   useEffect(() => {
@@ -494,11 +278,12 @@ const GamePathfinder: React.FC = () => {
 
   // Handle algorithm change
   const handleAlgorithmChange = (newAlgorithm: Algorithm) => {
+    console.log('Algorithm changed from', algorithm, 'to', newAlgorithm);
     setAlgorithm(newAlgorithm);
-    // Recalculate paths for all cars
-    setTimeout(() => {
-      initializeCars();
-    }, 100);
+    // Recalculate paths for all cars with the new algorithm
+    if (grid.length > 0) {
+      initializeCars(newAlgorithm);
+    }
   };
 
   // Toggle play/pause
@@ -509,9 +294,9 @@ const GamePathfinder: React.FC = () => {
   // Reset simulation
   const reset = () => {
     setIsRunning(false);
-    setTimeout(() => {
+    if (grid.length > 0) {
       initializeCars();
-    }, 100);
+    }
   };
 
   // Get cell color
@@ -584,7 +369,7 @@ const GamePathfinder: React.FC = () => {
           Reset
         </Button>
 
-        <FormControl size="small">
+        <FormControl size="small" sx={{ minWidth: 80 }}>
           <Select
             value={algorithm}
             onChange={(e) => handleAlgorithmChange(e.target.value as Algorithm)}
@@ -594,10 +379,10 @@ const GamePathfinder: React.FC = () => {
               '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: palette.primary }
             }}
           >
-            <MenuItem value="BFS">Breadth-First Search</MenuItem>
-            <MenuItem value="DFS">Depth-First Search</MenuItem>
-            {/* <MenuItem value="A*">A* Algorithm</MenuItem>
-            <MenuItem value="Dijkstra">Dijkstra's Algorithm</MenuItem> */}
+            <MenuItem value="BFS">{ALGORITHM_NAMES.BFS}</MenuItem>
+            <MenuItem value="DFS">{ALGORITHM_NAMES.DFS}</MenuItem>
+            {/* <MenuItem value="A*">{ALGORITHM_NAMES['A*']}</MenuItem>
+            <MenuItem value="Dijkstra">{ALGORITHM_NAMES.Dijkstra}</MenuItem> */}
           </Select>
         </FormControl>
 

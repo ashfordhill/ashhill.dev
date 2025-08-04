@@ -1,94 +1,82 @@
-import { Algorithm } from './algorithm';
-import { Path } from '../data/Car';
+// Dijkstra's pathfinding algorithm
 
-export class DijkstraAlgorithm implements Algorithm {
-  name = 'Dijkstra';
-  description = 'Dijkstra\'s algorithm finds the shortest path between nodes in a graph, which may represent a grid.';
+import { Position, CellType, PathfindingOptions } from './types';
 
-  findPath(
-    start: [number, number],
-    goal: [number, number],
-    obstaclesSet: Set<string>,
-    gridRows: number = 50,
-    gridCols: number = 50
-  ): Path | null {
-    const [sr, sc] = start;
-    const [gr, gc] = goal;
+export const findPathDijkstra = (start: Position, end: Position, options: PathfindingOptions): Position[] => {
+  const { grid, gridWidth, gridHeight } = options;
+  const distances = new Map<string, number>();
+  const previous = new Map<string, Position | null>();
+  const unvisited = new Set<string>();
+
+  // Initialize
+  for (let y = 0; y < gridHeight; y++) {
+    for (let x = 0; x < gridWidth; x++) {
+      if (grid[y][x] !== CellType.WALL) {
+        const key = `${x},${y}`;
+        distances.set(key, Infinity);
+        previous.set(key, null);
+        unvisited.add(key);
+      }
+    }
+  }
+
+  const startKey = `${start.x},${start.y}`;
+  distances.set(startKey, 0);
+
+  while (unvisited.size > 0) {
+    // Find unvisited node with minimum distance
+    let current: string | null = null;
+    let minDistance = Infinity;
     
-    // If start and goal are the same, return a path with just that position
-    if (sr === gr && sc === gc) return [[sr, sc]];
-    
-    const rows = gridRows, cols = gridCols;
-    
-    // Initialize distances array with Infinity
-    const dist: number[][] = Array.from({ length: rows }, () => Array(cols).fill(Infinity));
-    dist[sr][sc] = 0;  // Distance to start is 0
-    
-    // Initialize visited array
-    const visited: boolean[][] = Array.from({ length: rows }, () => Array(cols).fill(false));
-    
-    // Initialize parent map for path reconstruction
-    const parent: { [key: string]: string | null } = {};
-    parent[`${sr},${sc}`] = null;
-    
-    // Priority queue (simple array implementation)
-    const queue: [number, number, number][] = [[sr, sc, 0]];  // [row, col, distance]
-    
-    // Directions for movement
-    const directions: [number, number][] = [[1,0],[-1,0],[0,1],[0,-1]];
-    
-    while (queue.length > 0) {
-      // Sort queue by distance (ascending)
-      queue.sort((a, b) => a[2] - b[2]);
+    const unvisitedArray = Array.from(unvisited);
+    for (let i = 0; i < unvisitedArray.length; i++) {
+      const node = unvisitedArray[i];
+      const dist = distances.get(node) || Infinity;
+      if (dist < minDistance) {
+        minDistance = dist;
+        current = node;
+      }
+    }
+
+    if (!current || minDistance === Infinity) break;
+
+    unvisited.delete(current);
+    const coords = current.split(',');
+    const x = parseInt(coords[0]);
+    const y = parseInt(coords[1]);
+
+    if (x === end.x && y === end.y) {
+      // Reconstruct path
+      const path: Position[] = [];
+      let currentPos: Position | null = { x, y };
       
-      // Get node with smallest distance
-      const [r, c] = queue.shift()!;
-      
-      // If we've reached the goal, reconstruct and return the path
-      if (r === gr && c === gc) {
-        const path: Path = [];
-        let curKey: string | null = `${r},${c}`;
-        while (curKey) {
-          const [cr, cc] = curKey.split(',').map(Number);
-          path.unshift([cr, cc]);
-          curKey = parent[curKey];
-        }
-        return path;
+      while (currentPos) {
+        path.unshift(currentPos);
+        const key: string = `${currentPos.x},${currentPos.y}`;
+        currentPos = previous.get(key) || null;
       }
       
-      // Skip if already visited
-      if (visited[r][c]) continue;
-      
-      // Mark as visited
-      visited[r][c] = true;
-      
-      // Check all neighbors
-      for (const [dr, dc] of directions) {
-        const nr = r + dr, nc = c + dc;
-        
-        // Check if valid position
-        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
-        
-        // Skip obstacles
-        if (obstaclesSet.has(`${nr},${nc}`)) continue;
-        
-        // Skip visited nodes
-        if (visited[nr][nc]) continue;
-        
-        // Calculate new distance (all edges have weight 1 in a grid)
-        const newDist = dist[r][c] + 1;
-        
-        // If we found a shorter path, update distance and parent
-        if (newDist < dist[nr][nc]) {
-          dist[nr][nc] = newDist;
-          parent[`${nr},${nc}`] = `${r},${c}`;
-          
-          // Add to queue
-          queue.push([nr, nc, newDist]);
+      return path;
+    }
+
+    const neighbors = [
+      { x: x + 1, y },
+      { x: x - 1, y },
+      { x, y: y + 1 },
+      { x, y: y - 1 }
+    ];
+
+    for (const neighbor of neighbors) {
+      const neighborKey = `${neighbor.x},${neighbor.y}`;
+      if (unvisited.has(neighborKey)) {
+        const alt = (distances.get(current) || 0) + 1;
+        if (alt < (distances.get(neighborKey) || Infinity)) {
+          distances.set(neighborKey, alt);
+          previous.set(neighborKey, { x, y });
         }
       }
     }
-    
-    return null;  // No path found
   }
-}
+
+  return [];
+};
