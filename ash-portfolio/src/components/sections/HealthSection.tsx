@@ -113,27 +113,11 @@ const HealthSection: React.FC = () => {
               textAlign: 'center',
               textTransform: 'uppercase',
               letterSpacing: '2px',
-              mr: 2,
               fontSize: { xs: '1.8rem', md: '2.2rem' }
             }}
           >
             CI/CD Dashboard
           </Typography>
-          <Tooltip title="Refresh Status">
-            <IconButton 
-              onClick={refreshStatuses}
-              sx={{ 
-                color: palette.secondary,
-                '&:hover': {
-                  color: palette.primary,
-                  transform: 'rotate(180deg)',
-                  transition: 'all 0.3s ease'
-                }
-              }}
-            >
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
         </Box>
 
 
@@ -154,6 +138,24 @@ const HealthSection: React.FC = () => {
           </Typography>
         )}
 
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: -2 }}>
+          <Tooltip title="Refresh Status">
+            <IconButton 
+              onClick={refreshStatuses}
+              sx={{ 
+                color: palette.secondary,
+                '&:hover': {
+                  color: palette.primary,
+                  transform: 'rotate(180deg)',
+                  transition: 'all 0.3s ease'
+                }
+              }}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
         <Box sx={{ 
           display: 'grid', 
           gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
@@ -163,13 +165,15 @@ const HealthSection: React.FC = () => {
           overflow: 'auto',
           pr: 1, // Account for scrollbar
           pt: 1, // Padding top to allow room for hover transform
-          pb: 1  // Padding bottom for symmetry
+          pb: 1, // Padding bottom for symmetry
+          alignContent: 'center', // Center cards vertically in the grid
+          justifyContent: 'center' // Center cards horizontally in the grid
         }}>
           {statuses.map((status, index) => (
             <Card 
               key={status.repo.full_name}
               sx={{ 
-                height: '350px', // Fixed height for all cards
+                height: '400px', // Fixed height for all cards
                 display: 'flex',
                 flexDirection: 'column',
                 backgroundColor: palette.background + 'CC',
@@ -238,7 +242,13 @@ const HealthSection: React.FC = () => {
                     opacity: status.isLoading ? 0.6 : 0.8,
                     fontStyle: status.isLoading ? 'italic' : 'normal',
                     fontSize: '0.8rem',
-                    lineHeight: 1.3
+                    lineHeight: 1.3,
+                    height: '3.9rem', // Fixed height for 3 lines
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    textOverflow: 'ellipsis'
                   }}
                 >
                   {status.isLoading 
@@ -381,7 +391,7 @@ const HealthSection: React.FC = () => {
                 </Box>
 
                 {status.latestRun && (
-                  <Box sx={{ mt: 1.5 }}>
+                  <Box sx={{ mt: 1.0 }}>
                     <Tooltip title="View Workflow Run">
                       <IconButton
                         size="small"
