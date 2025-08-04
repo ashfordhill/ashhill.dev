@@ -38,6 +38,7 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = React.memo(({ audioRef, 
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const dataArrayRef = useRef<Uint8Array>(new Uint8Array(0));
   const isInitializedRef = useRef(false);
+  const isMountedRef = useRef(true); // Track if component is mounted
 
   // Memoize canvas dimensions for better performance
   const canvasConfig = useMemo(() => ({
@@ -147,14 +148,15 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = React.memo(({ audioRef, 
     }
     ctx.restore();
 
-    // Continue animation only if playing
-    if (isPlaying) {
+  // Continue animation only if playing
+    if (isPlaying && isMountedRef.current) {
       animationRef.current = requestAnimationFrame(draw);
     }
   }, [isPlaying, palette, canvasConfig]);
 
   // Cleanup function
   const cleanup = useCallback(() => {
+    isMountedRef.current = false;
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -184,6 +186,7 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = React.memo(({ audioRef, 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      isMountedRef.current = false;
       cleanup();
       if (audioContextRef.current) {
         audioContextRef.current.close().catch(console.warn);
@@ -216,6 +219,7 @@ interface Track {
 
 const SimpleMusicPlayer: React.FC = () => {
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
+  const currentSection = useAppSelector((state) => state.navigation.currentSection);
   const palette = colorPalettes[currentPalette];
   
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -228,6 +232,9 @@ const SimpleMusicPlayer: React.FC = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Check if music section is active
+  const isMusicActive = currentSection === 'music';
 
   // Memoize playlist to prevent unnecessary re-renders
   const playlist: Track[] = useMemo(() => [
@@ -461,6 +468,17 @@ const SimpleMusicPlayer: React.FC = () => {
       audio.preload = 'metadata';
     }
   }, []); // Only run once on mount
+
+  // Pause music when leaving the music section
+  useEffect(() => {
+    if (!isMusicActive && isPlaying) {
+      wasPlayingRef.current = true; // Remember we were playing
+      setIsPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    }
+  }, [isMusicActive, isPlaying]);
 
   if (!palette) {
     return (

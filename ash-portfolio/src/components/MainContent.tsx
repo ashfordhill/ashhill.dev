@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box } from '@mui/material';
 import { useAppSelector } from '../store/hooks';
 import { colorPalettes } from '../store/slices/themeSlice';
@@ -10,19 +10,33 @@ import SimpleMusicPlayer from './sections/SimpleMusicPlayer';
 const MainContent: React.FC = () => {
   const currentSection = useAppSelector((state) => state.navigation.currentSection);
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
+  const previousSectionRef = useRef(currentSection);
+
+  // Force cleanup when section changes
+  useEffect(() => {
+    if (previousSectionRef.current !== currentSection) {
+      // Small delay to allow current section to fully unmount before mounting new one
+      const timeoutId = setTimeout(() => {
+        previousSectionRef.current = currentSection;
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentSection]);
 
   const renderSection = () => {
+    // Only render the current section to ensure proper cleanup
     switch (currentSection) {
       case 'about':
-        return <AboutSection />;
+        return <AboutSection key="about" />;
       case 'fun':
-        return <FunSection />;
+        return <FunSection key="fun" />;
       case 'health':
-        return <HealthSection />;
+        return <HealthSection key="health" />;
       case 'music':
-        return <SimpleMusicPlayer />;
+        return <SimpleMusicPlayer key="music" />;
       default:
-        return <FunSection />;
+        return <FunSection key="fun-default" />;
     }
   };
 

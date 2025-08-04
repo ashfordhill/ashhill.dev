@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { RepositoryStatus } from '../types/github';
 import { GitHubApiService } from '../services/githubApi';
 
@@ -35,6 +35,10 @@ export const useGitHubStatus = ({
   );
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  
+  // Add refs to track cleanup state
+  const isMountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchRepositoryStatus = useCallback(async (owner: string, repo: string, branch: string = 'main') => {
     const cacheKey = `${owner}/${repo}`;
@@ -122,18 +126,39 @@ export const useGitHubStatus = ({
   }, []);
 
   const fetchAllStatuses = useCallback(async () => {
+    // Don't start new requests if component is unmounted
+    if (!isMountedRef.current) return;
+    
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this batch
+    abortControllerRef.current = new AbortController();
+    
     setIsLoading(true);
     
     // Update each repository status individually as they complete
     repositories.forEach(async ({ owner, repo, branch }, index) => {
+      // Check if still mounted before each request
+      if (!isMountedRef.current) return;
+      
       try {
         const result = await fetchRepositoryStatus(owner, repo, branch);
+        
+        // Check if still mounted before updating state
+        if (!isMountedRef.current) return;
+        
         setStatuses(prevStatuses => {
           const newStatuses = [...prevStatuses];
           newStatuses[index] = result;
           return newStatuses;
         });
       } catch (error) {
+        // Don't log errors if request was aborted due to unmount
+        if (!isMountedRef.current) return;
+        
         console.error(`Error fetching status for ${owner}/${repo}:`, error);
         setStatuses(prevStatuses => {
           const newStatuses = [...prevStatuses];
@@ -149,8 +174,10 @@ export const useGitHubStatus = ({
 
     // Set overall loading to false after a short delay to allow individual updates
     setTimeout(() => {
-      setIsLoading(false);
-      setLastUpdated(new Date());
+      if (isMountedRef.current) {
+        setIsLoading(false);
+        setLastUpdated(new Date());
+      }
     }, 1000);
   }, [repositories, fetchRepositoryStatus]);
 
@@ -168,6 +195,16 @@ export const useGitHubStatus = ({
       return () => clearInterval(interval);
     }
   }, [fetchAllStatuses, refreshInterval]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   return {
     statuses,

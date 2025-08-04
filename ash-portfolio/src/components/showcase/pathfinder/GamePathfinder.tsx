@@ -33,6 +33,7 @@ interface Car {
 const GamePathfinder: React.FC = () => {
   // Get current palette from Redux store
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
+  const currentSection = useAppSelector((state) => state.navigation.currentSection);
   const palette = colorPalettes[currentPalette];
 
   // Game state
@@ -51,6 +52,10 @@ const GamePathfinder: React.FC = () => {
   // Refs for animation
   const animationRef = useRef<NodeJS.Timeout | null>(null);
   const carsRef = useRef<Car[]>([]);
+  const isMountedRef = useRef(true); // Track if component is mounted
+  
+  // Pause game when not in the fun section
+  const isGameActive = currentSection === 'fun';
 
   // Initialize game grid (Complex maze with multiple paths)
   const initializeGrid = useCallback(() => {
@@ -197,7 +202,7 @@ const GamePathfinder: React.FC = () => {
 
   // Animation loop
   const animate = useCallback(() => {
-    if (!isRunning) return;
+    if (!isRunning || !isMountedRef.current || !isGameActive) return;
 
     setCars(prevCars => {
       const newCars = prevCars.map(car => {
@@ -238,8 +243,10 @@ const GamePathfinder: React.FC = () => {
       return newCars;
     });
 
-    animationRef.current = setTimeout(animate, ANIMATION_SPEED);
-  }, [isRunning, algorithm, spawnPoints, targetPoint, grid]);
+    if (isRunning && isMountedRef.current && isGameActive) {
+      animationRef.current = setTimeout(animate, ANIMATION_SPEED);
+    }
+  }, [isRunning, algorithm, spawnPoints, targetPoint, grid, isGameActive]);
 
   // Initialize grid on mount
   useEffect(() => {
@@ -260,7 +267,7 @@ const GamePathfinder: React.FC = () => {
 
   // Start/stop animation
   useEffect(() => {
-    if (isRunning) {
+    if (isRunning && isMountedRef.current && isGameActive) {
       animate();
     } else {
       if (animationRef.current) {
@@ -274,7 +281,25 @@ const GamePathfinder: React.FC = () => {
         clearTimeout(animationRef.current);
       }
     };
-  }, [isRunning, animate]);
+  }, [isRunning, animate, isGameActive]);
+
+  // Auto-pause when section changes
+  useEffect(() => {
+    if (!isGameActive && isRunning) {
+      setIsRunning(false);
+    }
+  }, [isGameActive, isRunning]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (animationRef.current) {
+        clearTimeout(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, []);
 
   // Handle algorithm change
   const handleAlgorithmChange = (newAlgorithm: Algorithm) => {

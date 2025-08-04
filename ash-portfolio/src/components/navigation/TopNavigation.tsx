@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   Box, 
   Button, 
@@ -18,9 +18,12 @@ const TopNavigation: React.FC = () => {
 
   const [paletteMenuAnchor, setPaletteMenuAnchor] = useState<null | HTMLElement>(null);
 
-  const handleSectionChange = (section: NavigationSection) => {
-    dispatch(setCurrentSection(section));
-  };
+  // Debounced navigation to prevent rapid switching
+  const handleSectionChange = useCallback((section: NavigationSection) => {
+    if (section !== currentSection) {
+      dispatch(setCurrentSection(section));
+    }
+  }, [dispatch, currentSection]);
 
   const handlePaletteMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setPaletteMenuAnchor(event.currentTarget);

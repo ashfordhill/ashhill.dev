@@ -10,6 +10,8 @@ How does this only have `62,548` downloads rn???
 
 Zencoder has been a top contender; it is able to handle sweeping, generic visual changes especially well. **Probably a good tool for large, sweeping changes**.
 
+You can also use 2+ chats at once. Although, because it likes to run builds and dev servers to test its own changes, this can end up getting buggy and weird. Probably best to have it not test changes and have multi-chats going on for different features that for sure won't touch each other. This does speed up development by quite a bit..when it works out.
+
 When coming up with a strategy to use png assets as tiles, it seemed to reach a wall with smooth implementations. 
 
 Possible reasons:

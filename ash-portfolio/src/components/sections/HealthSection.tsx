@@ -13,6 +13,7 @@ import { RepositoryStatus } from '../../types/github';
 
 const HealthSection: React.FC = () => {
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
+  const currentSection = useAppSelector((state) => state.navigation.currentSection);
   const palette = colorPalettes[currentPalette];
 
   const repositories = [
@@ -21,9 +22,10 @@ const HealthSection: React.FC = () => {
     { owner: 'ashfordhill', repo: 'ashhill.dev', branch: 'main' }
   ];
 
+  // Only fetch data when this section is active
   const { statuses, isLoading, lastUpdated, refreshStatuses } = useGitHubStatus({
     repositories,
-    refreshInterval: 900000 // 15 minutes
+    refreshInterval: currentSection === 'health' ? 900000 : 0 // Only refresh when active
   });
 
   const getStatusIcon = (status: RepositoryStatus) => {
