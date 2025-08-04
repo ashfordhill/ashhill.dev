@@ -55,7 +55,7 @@ const GamePathfinder: React.FC = () => {
   const [grid, setGrid] = useState<CellType[][]>([]);
   const [cars, setCars] = useState<Car[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [algorithm, setAlgorithm] = useState<Algorithm>('BFS');
+  const [algorithm, setAlgorithm] = useState<Algorithm>('DFS');
   const [showPaths, setShowPaths] = useState(true);
   const [spawnPoints] = useState<Position[]>([
     { x: 1, y: 5 },
@@ -596,8 +596,8 @@ const GamePathfinder: React.FC = () => {
           >
             <MenuItem value="BFS">Breadth-First Search</MenuItem>
             <MenuItem value="DFS">Depth-First Search</MenuItem>
-            <MenuItem value="A*">A* Algorithm</MenuItem>
-            <MenuItem value="Dijkstra">Dijkstra's Algorithm</MenuItem>
+            {/* <MenuItem value="A*">A* Algorithm</MenuItem>
+            <MenuItem value="Dijkstra">Dijkstra's Algorithm</MenuItem> */}
           </Select>
         </FormControl>
 

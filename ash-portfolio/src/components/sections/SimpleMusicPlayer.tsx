@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { 
   Box, 
   IconButton, 
@@ -30,15 +30,24 @@ interface AudioVisualizerProps {
   palette: any;
 }
 
-const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, palette }) => {
+const AudioVisualizer: React.FC<AudioVisualizerProps> = React.memo(({ audioRef, isPlaying, palette }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array>(new Uint8Array(0));
+  const isInitializedRef = useRef(false);
+
+  // Memoize canvas dimensions for better performance
+  const canvasConfig = useMemo(() => ({
+    width: 400, // Reduced from 800
+    height: 200, // Reduced from 400
+    bufferLength: 64 // Reduced from 256
+  }), []);
 
   const setupAudioContext = useCallback(() => {
-    if (!audioRef.current || sourceRef.current) return;
+    if (!audioRef.current || sourceRef.current || isInitializedRef.current) return;
 
     try {
       if (!audioContextRef.current) {
@@ -46,15 +55,20 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
       }
 
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
+      analyserRef.current.fftSize = canvasConfig.bufferLength * 2; // More efficient FFT size
+      analyserRef.current.smoothingTimeConstant = 0.8;
       
       sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
       sourceRef.current.connect(analyserRef.current);
       analyserRef.current.connect(audioContextRef.current.destination);
+      
+      // Pre-allocate data array
+      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+      isInitializedRef.current = true;
     } catch (error) {
       console.warn('AudioContext setup failed:', error);
     }
-  }, [audioRef]);
+  }, [audioRef, canvasConfig.bufferLength]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -63,67 +77,103 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let dataArray: Uint8Array;
-    let bufferLength: number;
+    // Only animate if playing to save CPU
+    if (!isPlaying) {
+      // Draw static bars when not playing
+      ctx.fillStyle = `${palette.background}80`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const barWidth = canvas.width / canvasConfig.bufferLength;
+      const staticHeight = canvas.height * 0.1;
+      
+      for (let i = 0; i < canvasConfig.bufferLength; i++) {
+        const x = i * barWidth;
+        const y = canvas.height - staticHeight;
+        
+        ctx.fillStyle = `${palette.border}40`;
+        ctx.fillRect(x, y, barWidth - 1, staticHeight);
+      }
+      return;
+    }
 
-    if (analyserRef.current && isPlaying) {
+    let dataArray = dataArrayRef.current;
+    
+    if (analyserRef.current) {
       try {
-        bufferLength = analyserRef.current.frequencyBinCount;
-        dataArray = new Uint8Array(bufferLength);
-        analyserRef.current.getByteFrequencyData(dataArray);
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        // Create a fresh Uint8Array to avoid TypeScript buffer type issues
+        const tempArray = new Uint8Array(bufferLength);
+        analyserRef.current.getByteFrequencyData(tempArray);
+        dataArray = tempArray;
+        dataArrayRef.current = dataArray;
       } catch (error) {
-        bufferLength = 128;
-        dataArray = new Uint8Array(bufferLength);
-        const time = Date.now() * 0.001;
-        for (let i = 0; i < bufferLength; i++) {
-          dataArray[i] = Math.floor((Math.sin(time * 2 + i * 0.1) * 0.5 + 0.5) * 255 * 0.5);
+        // Fallback with reduced intensity
+        const time = Date.now() * 0.002;
+        for (let i = 0; i < canvasConfig.bufferLength; i++) {
+          dataArray[i] = Math.floor((Math.sin(time + i * 0.1) * 0.5 + 0.5) * 128);
         }
       }
     } else {
-      bufferLength = 128;
-      dataArray = new Uint8Array(bufferLength);
-      const time = Date.now() * 0.001;
-      for (let i = 0; i < bufferLength; i++) {
-        dataArray[i] = Math.floor((Math.sin(time * 2 + i * 0.1) * 0.5 + 0.5) * 255 * 0.3);
+      // Fallback animation
+      if (dataArray.length !== canvasConfig.bufferLength) {
+        dataArray = new Uint8Array(canvasConfig.bufferLength);
+        dataArrayRef.current = dataArray;
+      }
+      const time = Date.now() * 0.002;
+      for (let i = 0; i < canvasConfig.bufferLength; i++) {
+        dataArray[i] = Math.floor((Math.sin(time + i * 0.1) * 0.5 + 0.5) * 128);
       }
     }
 
-    // Clear canvas
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    // Clear with fade effect for smoother animation
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw bars
-    const barWidth = canvas.width / bufferLength;
+    // Draw bars with optimized rendering
+    const barWidth = canvas.width / canvasConfig.bufferLength;
     const maxBarHeight = canvas.height * 0.8;
     
-    for (let i = 0; i < bufferLength; i++) {
+    ctx.save();
+    for (let i = 0; i < canvasConfig.bufferLength; i++) {
       const amplitude = dataArray[i] / 255;
       const barHeight = amplitude * maxBarHeight;
       const x = i * barWidth;
       const y = canvas.height - barHeight;
 
-      const hue = (i / bufferLength) * 360;
-      const saturation = 70 + amplitude * 30;
-      const lightness = 50 + amplitude * 30;
-      
-      ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      // Use simpler color calculation
+      const intensity = Math.floor(amplitude * 100);
+      ctx.fillStyle = `hsl(${(i / canvasConfig.bufferLength) * 180 + 180}, 70%, ${50 + intensity * 0.3}%)`;
       ctx.fillRect(x, y, barWidth - 1, barHeight);
     }
+    ctx.restore();
 
-    animationRef.current = requestAnimationFrame(draw);
-  }, [isPlaying]);
+    // Continue animation only if playing
+    if (isPlaying) {
+      animationRef.current = requestAnimationFrame(draw);
+    }
+  }, [isPlaying, palette, canvasConfig]);
+
+  // Cleanup function
+  const cleanup = useCallback(() => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    draw();
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [draw]);
+    if (isPlaying) {
+      draw();
+    } else {
+      cleanup();
+      draw(); // Draw static state
+    }
+    
+    return cleanup;
+  }, [isPlaying, draw, cleanup]);
 
   useEffect(() => {
-    if (isPlaying && audioRef.current) {
+    if (isPlaying && audioRef.current && !isInitializedRef.current) {
       setupAudioContext();
       if (audioContextRef.current?.state === 'suspended') {
         audioContextRef.current.resume().catch(console.warn);
@@ -131,11 +181,21 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
     }
   }, [isPlaying, setupAudioContext]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanup();
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.warn);
+      }
+    };
+  }, [cleanup]);
+
   return (
     <canvas
       ref={canvasRef}
-      width={800}
-      height={400}
+      width={canvasConfig.width}
+      height={canvasConfig.height}
       style={{
         width: '100%',
         height: '100%',
@@ -145,7 +205,7 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioRef, isPlaying, 
       }}
     />
   );
-};
+});
 
 interface Track {
   id: number;
@@ -159,6 +219,7 @@ const SimpleMusicPlayer: React.FC = () => {
   const palette = colorPalettes[currentPalette];
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const wasPlayingRef = useRef(false); // Track playing state for auto-play
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -166,8 +227,10 @@ const SimpleMusicPlayer: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const playlist: Track[] = [
+  // Memoize playlist to prevent unnecessary re-renders
+  const playlist: Track[] = useMemo(() => [
     {
       id: 1,
       title: "Home Cookin",
@@ -180,120 +243,224 @@ const SimpleMusicPlayer: React.FC = () => {
       artist: "Skygaze",
       url: "/music/Skygaze - Kissing the Moon.mp3"
     }
-  ];
+  ], []);
 
-  const currentTrack = playlist[currentTrackIndex];
+  const currentTrack = useMemo(() => playlist[currentTrackIndex], [playlist, currentTrackIndex]);
 
-  // Simple event handlers
-  const handleTimeUpdate = () => {
+  // Memoized event handlers to prevent unnecessary re-renders
+  const handleTimeUpdate = useCallback(() => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
     }
-  };
+  }, []);
 
-  const handleLoadedMetadata = () => {
+  const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleEnded = () => {
+  const handleLoadStart = useCallback(() => {
+    setIsLoading(true);
+  }, []);
+
+  const handleCanPlay = useCallback(() => {
+    setIsLoading(false);
+  }, []);
+
+  const handleLoadedData = useCallback(() => {
+    setIsLoading(false);
+  }, []);
+
+  const handleError = useCallback((error: any) => {
+    console.error('Audio loading error:', error);
+    setIsLoading(false);
     setIsPlaying(false);
+  }, []);
+
+  const handleEnded = useCallback(() => {
+    setIsPlaying(false);
+    wasPlayingRef.current = false;
     if (currentTrackIndex < playlist.length - 1) {
       setCurrentTrackIndex(currentTrackIndex + 1);
+      wasPlayingRef.current = true; // Auto-play next track
     }
-  };
+  }, [currentTrackIndex, playlist.length]);
 
-  // Simple play/pause
-  const togglePlay = () => {
-    if (!audioRef.current) return;
+  // Optimized play/pause with loading state
+  const togglePlay = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    if (isPlaying) {
-      audioRef.current.pause();
+    try {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+        wasPlayingRef.current = false;
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+        
+        // Ensure audio is ready to play
+        if (audio.readyState < 2) { // HAVE_CURRENT_DATA
+          // Wait for audio to be ready
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Audio loading timeout'));
+            }, 5000);
+
+            const onCanPlay = () => {
+              clearTimeout(timeout);
+              audio.removeEventListener('canplay', onCanPlay);
+              audio.removeEventListener('error', onError);
+              resolve(undefined);
+            };
+
+            const onError = (e: any) => {
+              clearTimeout(timeout);
+              audio.removeEventListener('canplay', onCanPlay);
+              audio.removeEventListener('error', onError);
+              reject(e);
+            };
+
+            audio.addEventListener('canplay', onCanPlay);
+            audio.addEventListener('error', onError);
+          });
+        }
+
+        await audio.play();
+        setIsPlaying(true);
+        wasPlayingRef.current = true;
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Play failed:', error);
       setIsPlaying(false);
-    } else {
-      audioRef.current.play()
-        .then(() => setIsPlaying(true))
-        .catch((error) => {
-          console.error('Play failed:', error);
-          setIsPlaying(false);
-        });
+      wasPlayingRef.current = false;
+      setIsLoading(false);
     }
-  };
+  }, [isPlaying]);
 
-  const playNextTrack = () => {
+  const playNextTrack = useCallback(() => {
     if (currentTrackIndex < playlist.length - 1) {
       setCurrentTrackIndex(currentTrackIndex + 1);
-      setIsPlaying(false);
+      // Don't change playing state - let the new track auto-play if currently playing
     }
-  };
+  }, [currentTrackIndex, playlist.length]);
 
-  const playPreviousTrack = () => {
+  const playPreviousTrack = useCallback(() => {
     if (currentTrackIndex > 0) {
       setCurrentTrackIndex(currentTrackIndex - 1);
-      setIsPlaying(false);
+      // Don't change playing state - let the new track auto-play if currently playing
     }
-  };
+  }, [currentTrackIndex]);
 
-  const selectTrack = (index: number) => {
+  const selectTrack = useCallback((index: number) => {
     setCurrentTrackIndex(index);
-    setIsPlaying(false);
     setShowPlaylist(false);
-  };
+    // Don't change playing state - let the new track auto-play if currently playing
+  }, []);
 
-  const handleSeek = (event: Event, newValue: number | number[]) => {
+  const handleSeek = useCallback((event: Event, newValue: number | number[]) => {
     if (!audioRef.current) return;
     const time = Array.isArray(newValue) ? newValue[0] : newValue;
     audioRef.current.currentTime = time;
     setCurrentTime(time);
-  };
+  }, []);
 
-  const handleVolumeChange = (event: Event, newValue: number | number[]) => {
+  const handleVolumeChange = useCallback((event: Event, newValue: number | number[]) => {
     const vol = Array.isArray(newValue) ? newValue[0] : newValue;
     setVolume(vol);
     if (audioRef.current) {
       audioRef.current.volume = vol;
     }
-  };
+  }, []);
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     if (!audioRef.current) return;
     const newMuted = !isMuted;
     audioRef.current.muted = newMuted;
     setIsMuted(newMuted);
-  };
+  }, [isMuted]);
 
-  const formatTime = (time: number) => {
+  const formatTime = useCallback((time: number) => {
     if (!isFinite(time) || time < 0) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
-  // Set up audio element when track changes
+  // Optimized audio setup with lazy loading
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    const wasPlaying = wasPlayingRef.current; // Remember if we were playing before track change
+
     // Reset state
     setCurrentTime(0);
     setDuration(0);
-    setIsPlaying(false);
+    setIsPlaying(false); // Temporarily stop while loading
+    setIsLoading(false); // Don't set loading true here, let onLoadStart handle it
 
-    // Set up new track
+    // Set up new track with lazy loading
     audio.src = currentTrack.url;
-    audio.volume = volume;
-    audio.muted = isMuted;
+    audio.preload = 'metadata'; // Only load metadata initially
     audio.load();
+
+    // Auto-play if we were playing before the track change
+    if (wasPlaying) {
+      const playWhenReady = () => {
+        if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
+          audio.play().then(() => {
+            setIsPlaying(true);
+            wasPlayingRef.current = true;
+          }).catch((error) => {
+            console.error('Auto-play failed:', error);
+            setIsPlaying(false);
+            wasPlayingRef.current = false;
+          });
+        } else {
+          // Wait for the audio to be ready
+          const onCanPlay = () => {
+            audio.removeEventListener('canplay', onCanPlay);
+            audio.play().then(() => {
+              setIsPlaying(true);
+              wasPlayingRef.current = true;
+            }).catch((error) => {
+              console.error('Auto-play failed:', error);
+              setIsPlaying(false);
+              wasPlayingRef.current = false;
+            });
+          };
+          audio.addEventListener('canplay', onCanPlay);
+        }
+      };
+
+      // Small delay to ensure the audio element is ready
+      setTimeout(playWhenReady, 100);
+    }
   }, [currentTrack.url]);
 
-  // Set up volume when it changes
+  // Separate effect for volume changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
       audioRef.current.muted = isMuted;
     }
   }, [volume, isMuted]);
+
+  // Initialize audio element on mount
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      // Set initial properties
+      audio.volume = volume;
+      audio.muted = isMuted;
+      audio.preload = 'metadata';
+    }
+  }, []); // Only run once on mount
 
   if (!palette) {
     return (
@@ -409,6 +576,7 @@ const SimpleMusicPlayer: React.FC = () => {
 
               <IconButton
                 onClick={togglePlay}
+                disabled={isLoading}
                 sx={{
                   color: palette.primary,
                   backgroundColor: `${palette.primary}15`,
@@ -416,14 +584,38 @@ const SimpleMusicPlayer: React.FC = () => {
                   borderRadius: '50%',
                   width: 56,
                   height: 56,
+                  opacity: isLoading ? 0.7 : 1,
                   '&:hover': {
                     color: palette.accent,
                     backgroundColor: `${palette.accent}15`,
-                    transform: 'scale(1.1)',
+                    transform: isLoading ? 'none' : 'scale(1.1)',
+                  },
+                  '&:disabled': {
+                    color: palette.primary,
+                    backgroundColor: `${palette.primary}15`,
                   }
                 }}
               >
-                {isPlaying ? <PauseIcon sx={{ fontSize: 32 }} /> : <PlayArrowIcon sx={{ fontSize: 32 }} />}
+                {isLoading ? (
+                  <Box
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      border: `3px solid ${palette.primary}30`,
+                      borderTop: `3px solid ${palette.primary}`,
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }}
+                  />
+                ) : isPlaying ? (
+                  <PauseIcon sx={{ fontSize: 32 }} />
+                ) : (
+                  <PlayArrowIcon sx={{ fontSize: 32 }} />
+                )}
               </IconButton>
 
               <IconButton
@@ -551,6 +743,10 @@ const SimpleMusicPlayer: React.FC = () => {
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onLoadStart={handleLoadStart}
+        onCanPlay={handleCanPlay}
+        onLoadedData={handleLoadedData}
+        onError={handleError}
         onEnded={handleEnded}
         preload="metadata"
       />
@@ -558,4 +754,4 @@ const SimpleMusicPlayer: React.FC = () => {
   );
 };
 
-export default SimpleMusicPlayer;
+export default React.memo(SimpleMusicPlayer);

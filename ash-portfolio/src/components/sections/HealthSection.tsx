@@ -78,21 +78,34 @@ const HealthSection: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container 
+      maxWidth="lg" 
+      sx={{ 
+        py: 2,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}
+    >
       <Paper 
         elevation={6} 
         sx={{ 
-          p: 4, 
+          p: 3,
           backgroundColor: palette.background + 'E6',
           border: `2px solid ${palette.border}`,
           borderRadius: '12px',
           boxShadow: `0 0 30px ${palette.border}40`,
           backdropFilter: 'blur(10px)',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
           <Typography 
-            variant="h3" 
+            variant="h4" 
             sx={{ 
               color: palette.primary, 
               fontFamily: 'monospace',
@@ -100,7 +113,8 @@ const HealthSection: React.FC = () => {
               textAlign: 'center',
               textTransform: 'uppercase',
               letterSpacing: '2px',
-              mr: 2
+              mr: 2,
+              fontSize: { xs: '1.8rem', md: '2.2rem' }
             }}
           >
             CI/CD Dashboard
@@ -121,43 +135,19 @@ const HealthSection: React.FC = () => {
             </IconButton>
           </Tooltip>
         </Box>
-        
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            color: palette.text, 
-            mb: 2, 
-            textAlign: 'center',
-            fontFamily: 'monospace',
-            opacity: 0.9
-          }}
-        >
-          Real-time GitHub Actions build status monitoring
-        </Typography>
 
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            color: palette.text, 
-            mb: 2, 
-            textAlign: 'center',
-            fontFamily: 'monospace',
-            opacity: 0.6,
-            fontSize: '0.8rem'
-          }}
-        >
-          Note: GitHub API has rate limits. Data is cached for 10 minutes to reduce requests.
-        </Typography>
+
 
         {lastUpdated && (
           <Typography 
             variant="body2" 
             sx={{ 
               color: palette.text, 
-              mb: 4, 
+              mb: 2, 
               textAlign: 'center',
               fontFamily: 'monospace',
-              opacity: 0.7
+              opacity: 0.7,
+              fontSize: '0.75rem'
             }}
           >
             Last updated: {formatDate(lastUpdated.toISOString())}
@@ -167,38 +157,53 @@ const HealthSection: React.FC = () => {
         <Box sx={{ 
           display: 'grid', 
           gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-          gap: 3 
+          gap: 2,
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          pr: 1, // Account for scrollbar
+          pt: 1, // Padding top to allow room for hover transform
+          pb: 1  // Padding bottom for symmetry
         }}>
           {statuses.map((status, index) => (
             <Card 
               key={status.repo.full_name}
               sx={{ 
-                height: '100%',
+                height: '350px', // Fixed height for all cards
+                display: 'flex',
+                flexDirection: 'column',
                 backgroundColor: palette.background + 'CC',
                 border: `1px solid ${palette.border}`,
                 borderRadius: '8px',
                 boxShadow: `0 0 15px ${palette.border}30`,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: `0 5px 25px ${getStatusColor(status)}40`,
+                  transform: 'translateY(-3px)',
+                  boxShadow: `0 3px 20px ${getStatusColor(status)}40`,
                   borderColor: getStatusColor(status),
                 }
               }}
             >
-              <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                <Box sx={{ mb: 2 }}>
+              <CardContent sx={{ 
+                p: 2, 
+                textAlign: 'center',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Box sx={{ mb: 1.5 }}>
                   {getStatusIcon(status)}
                 </Box>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.5 }}>
                   <Typography 
-                    variant="h5" 
+                    variant="h6" 
                     sx={{ 
                       color: palette.secondary, 
                       fontFamily: 'monospace',
                       textShadow: `0 0 5px ${palette.secondary}60`,
-                      mr: 1
+                      mr: 1,
+                      fontSize: { xs: '1rem', md: '1.25rem' }
                     }}
                   >
                     {status.repo.name}
@@ -231,7 +236,9 @@ const HealthSection: React.FC = () => {
                     mb: 2,
                     fontFamily: 'monospace',
                     opacity: status.isLoading ? 0.6 : 0.8,
-                    fontStyle: status.isLoading ? 'italic' : 'normal'
+                    fontStyle: status.isLoading ? 'italic' : 'normal',
+                    fontSize: '0.8rem',
+                    lineHeight: 1.3
                   }}
                 >
                   {status.isLoading 
@@ -240,32 +247,41 @@ const HealthSection: React.FC = () => {
                   }
                 </Typography>
 
+                {/* Spacer to push content to bottom */}
+                <Box sx={{ flex: 1 }} />
+
                 {status.error ? (
-                  <Chip 
-                    label={status.error.includes('rate limit') ? "Rate Limited" : "API Error"} 
-                    color="error" 
-                    size="small"
-                    sx={{ mb: 2, fontFamily: 'monospace' }}
-                  />
+                  <Box>
+                    <Chip 
+                      label={status.error.includes('rate limit') ? "Rate Limited" : "API Error"} 
+                      color="error" 
+                      size="small"
+                      sx={{ mb: 1.5, fontFamily: 'monospace', fontSize: '0.7rem' }}
+                    />
+                  </Box>
                 ) : status.isLoading ? (
-                  <Chip 
-                    label="Loading..." 
-                    sx={{ 
-                      backgroundColor: palette.secondary + '20',
-                      color: palette.secondary,
-                      fontFamily: 'monospace',
-                      mb: 2
-                    }}
-                  />
+                  <Box>
+                    <Chip 
+                      label="Loading..." 
+                      sx={{ 
+                        backgroundColor: palette.secondary + '20',
+                        color: palette.secondary,
+                        fontFamily: 'monospace',
+                        mb: 1.5,
+                        fontSize: '0.7rem'
+                      }}
+                    />
+                  </Box>
                 ) : status.latestRun ? (
-                  <Box sx={{ mb: 2 }}>
+                  <Box sx={{ mb: 1.5 }}>
                     <Chip 
                       label={status.latestRun.conclusion || 'Unknown'}
                       sx={{ 
                         backgroundColor: getStatusColor(status) + '20',
                         color: getStatusColor(status),
                         fontFamily: 'monospace',
-                        mb: 1
+                        mb: 0.5,
+                        fontSize: '0.7rem'
                       }}
                     />
                     <Typography 
@@ -273,22 +289,26 @@ const HealthSection: React.FC = () => {
                       sx={{ 
                         color: palette.text, 
                         fontFamily: 'monospace',
-                        opacity: 0.7
+                        opacity: 0.7,
+                        fontSize: '0.75rem'
                       }}
                     >
                       Run #{status.latestRun.run_number}
                     </Typography>
                   </Box>
                 ) : (
-                  <Chip 
-                    label="No Runs" 
-                    sx={{ 
-                      backgroundColor: palette.text + '20',
-                      color: palette.text,
-                      fontFamily: 'monospace',
-                      mb: 2
-                    }}
-                  />
+                  <Box>
+                    <Chip 
+                      label="No Runs" 
+                      sx={{ 
+                        backgroundColor: palette.text + '20',
+                        color: palette.text,
+                        fontFamily: 'monospace',
+                        mb: 1.5,
+                        fontSize: '0.7rem'
+                      }}
+                    />
+                  </Box>
                 )}
 
                 <Box sx={{ textAlign: 'left' }}>
@@ -298,8 +318,9 @@ const HealthSection: React.FC = () => {
                         variant="body2" 
                         sx={{ 
                           color: palette.accent, 
-                          mb: 1,
+                          mb: 0.5,
                           fontFamily: 'monospace',
+                          fontSize: '0.75rem',
                           '&:before': {
                             content: '"▶ "',
                             color: palette.primary,
@@ -312,8 +333,9 @@ const HealthSection: React.FC = () => {
                         variant="body2" 
                         sx={{ 
                           color: palette.accent, 
-                          mb: 1,
+                          mb: 0.5,
                           fontFamily: 'monospace',
+                          fontSize: '0.75rem',
                           '&:before': {
                             content: '"▶ "',
                             color: palette.primary,
@@ -326,8 +348,9 @@ const HealthSection: React.FC = () => {
                         variant="body2" 
                         sx={{ 
                           color: palette.accent, 
-                          mb: 1,
+                          mb: 0.5,
                           fontFamily: 'monospace',
+                          fontSize: '0.75rem',
                           '&:before': {
                             content: '"▶ "',
                             color: palette.primary,
@@ -343,8 +366,9 @@ const HealthSection: React.FC = () => {
                       variant="body2" 
                       sx={{ 
                         color: palette.accent, 
-                        mb: 1,
+                        mb: 0.5,
                         fontFamily: 'monospace',
+                        fontSize: '0.75rem',
                         '&:before': {
                           content: '"▶ "',
                           color: palette.primary,
@@ -357,7 +381,7 @@ const HealthSection: React.FC = () => {
                 </Box>
 
                 {status.latestRun && (
-                  <Box sx={{ mt: 2 }}>
+                  <Box sx={{ mt: 1.5 }}>
                     <Tooltip title="View Workflow Run">
                       <IconButton
                         size="small"
@@ -367,7 +391,7 @@ const HealthSection: React.FC = () => {
                           '&:hover': { color: palette.primary }
                         }}
                       >
-                        <GitHubIcon />
+                        <GitHubIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -375,36 +399,6 @@ const HealthSection: React.FC = () => {
               </CardContent>
             </Card>
           ))}
-        </Box>
-
-        <Box sx={{ 
-          mt: 4, 
-          p: 3, 
-          border: `1px solid ${palette.primary}`,
-          borderRadius: '8px',
-          backgroundColor: palette.primary + '10',
-          textAlign: 'center'
-        }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              color: palette.primary, 
-              mb: 2,
-              fontFamily: 'monospace',
-              textShadow: `0 0 5px ${palette.primary}60`
-            }}
-          >
-            Coming Soon
-          </Typography>
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              color: palette.text, 
-              fontFamily: 'monospace'
-            }}
-          >
-            Advanced workflow analytics, deployment tracking, and automated notifications for build failures.
-          </Typography>
         </Box>
       </Paper>
     </Container>
