@@ -1,5 +1,4 @@
-name: Screenshot and generate video
-description: Take screenshots and generate a video of the Next.js app using Puppeteer
+name: screenshot & generate timeline GIF
 
 on: 
   push:
@@ -36,7 +35,7 @@ jobs:
         working-directory: ./ash-portfolio
         run: npm run start &
 
-      - name: Take visual records (GIF)
+      - name: Take visual records
         id: capture
         uses: ashfordhill/puppeteer-action@main
         with:
