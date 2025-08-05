@@ -268,7 +268,7 @@ const AboutSection: React.FC = () => {
                   boxShadow: `0 0 10px ${palette.primary}80`,
                 },
               }}
-              href="mailto:contact@ashhill.dev"
+              href="mailto:holler@ashhill.dev"
               target="_blank"
             >
               <Email />
