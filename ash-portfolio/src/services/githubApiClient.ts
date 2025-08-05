@@ -21,9 +21,16 @@ export class GitHubApiClientService {
 
   static async getRepository(owner: string, repo: string): Promise<GitHubRepository> {
     try {
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${repo}`, {
         headers: this.getHeaders(),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         // Log the specific error for debugging
@@ -45,6 +52,10 @@ export class GitHubApiClientService {
 
       return response.json();
     } catch (error) {
+      // Handle timeout errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Request timeout while fetching repository data`);
+      }
       // If it's a network error or other fetch error, provide a fallback
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error(`Network error while fetching repository data`);
@@ -60,6 +71,10 @@ export class GitHubApiClientService {
     perPage: number = 1
   ): Promise<GitHubWorkflowRunsResponse> {
     try {
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const url = new URL(`${GITHUB_API_BASE}/repos/${owner}/${repo}/actions/runs`);
       url.searchParams.set('branch', branch);
       url.searchParams.set('per_page', perPage.toString());
@@ -67,7 +82,10 @@ export class GitHubApiClientService {
 
       const response = await fetch(url.toString(), {
         headers: this.getHeaders(),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         // Log the specific error for debugging
@@ -89,6 +107,10 @@ export class GitHubApiClientService {
 
       return response.json();
     } catch (error) {
+      // Handle timeout errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Request timeout while fetching workflow runs`);
+      }
       // If it's a network error or other fetch error, provide a fallback
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error(`Network error while fetching workflow runs`);

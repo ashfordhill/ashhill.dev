@@ -4,19 +4,15 @@ import { GitHubApiService } from '../services/githubApi';
 
 interface UseGitHubStatusProps {
   repositories: Array<{ owner: string; repo: string; branch?: string }>;
-  refreshInterval?: number; // in milliseconds
+  enabled?: boolean; // whether to fetch data at all
 }
-
-// Simple cache to store repository data
-const repositoryCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 export const useGitHubStatus = ({ 
   repositories, 
-  refreshInterval = 900000 // 15 minutes default
+  enabled = true
 }: UseGitHubStatusProps) => {
-  // Initialize with placeholder statuses for immediate display
-  const [statuses, setStatuses] = useState<RepositoryStatus[]>(() => 
+  // Initialize with loading states for immediate display
+  const [statuses, setStatuses] = useState<RepositoryStatus[]>(() =>
     repositories.map(({ owner, repo, branch = 'main' }) => ({
       repo: {
         id: 0,
@@ -33,176 +29,118 @@ export const useGitHubStatus = ({
       error: null
     }))
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  
-  // Add refs to track cleanup state
   const isMountedRef = useRef(true);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchRepositoryStatus = useCallback(async (owner: string, repo: string, branch: string = 'main') => {
-    const cacheKey = `${owner}/${repo}`;
-    const now = Date.now();
+    console.log(`Fetching status for ${owner}/${repo}`);
     
-    // Check cache first
-    const cached = repositoryCache.get(cacheKey);
-    if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-      console.log(`Using cached data for ${cacheKey}`);
-      return {
-        ...cached.data,
-        isLoading: false
-      };
+    let repoData = null;
+    let latestRun = null;
+    let error = null;
+
+    try {
+      // Try to fetch repository data
+      repoData = await GitHubApiService.getRepository(owner, repo);
+      console.log(`Repository data for ${owner}/${repo}:`, repoData ? 'success' : 'null');
+    } catch (repoError) {
+      console.error(`Repository fetch failed for ${owner}/${repo}:`, repoError);
+      error = 'Repository fetch failed';
     }
 
     try {
-      // Try to fetch repository data first
-      let repoData;
-      let latestRun = null;
-      let errorMessage = null;
-
-      try {
-        repoData = await GitHubApiService.getRepository(owner, repo);
-      } catch (repoError) {
-        console.warn(`Failed to fetch repository data for ${owner}/${repo}:`, repoError);
-        // Use fallback repository data
-        repoData = {
-          id: 0,
-          name: repo,
-          full_name: `${owner}/${repo}`,
-          html_url: `https://github.com/${owner}/${repo}`,
-          description: 'Repository information unavailable (API limit reached)',
-          updated_at: new Date().toISOString(),
-          pushed_at: new Date().toISOString(),
-          default_branch: branch
-        };
-        errorMessage = repoError instanceof Error ? repoError.message : 'Repository fetch failed';
+      // Try to fetch workflow data
+      latestRun = await GitHubApiService.getLatestWorkflowRun(owner, repo, branch);
+      console.log(`Workflow data for ${owner}/${repo}:`, latestRun ? 'success' : 'null');
+    } catch (workflowError) {
+      console.error(`Workflow fetch failed for ${owner}/${repo}:`, workflowError);
+      if (!error) { // Only set workflow error if we don't have a repo error
+        error = 'No workflows found';
       }
-
-      // Try to fetch workflow run data
-      try {
-        latestRun = await GitHubApiService.getLatestWorkflowRun(owner, repo, branch);
-      } catch (workflowError) {
-        console.warn(`Failed to fetch workflow data for ${owner}/${repo}:`, workflowError);
-        // Don't override the error message if we already have one from repo fetch
-        if (!errorMessage) {
-          errorMessage = workflowError instanceof Error ? workflowError.message : 'Workflow fetch failed';
-        }
-      }
-
-      const result = {
-        repo: repoData,
-        latestRun,
-        isLoading: false,
-        error: errorMessage
-      };
-
-      // Cache the result if successful or if we have partial data
-      if (!errorMessage || repoData) {
-        repositoryCache.set(cacheKey, {
-          data: result,
-          timestamp: now
-        });
-      }
-
-      return result;
-    } catch (error) {
-      console.error(`Unexpected error fetching status for ${owner}/${repo}:`, error);
-      return {
-        repo: {
-          id: 0,
-          name: repo,
-          full_name: `${owner}/${repo}`,
-          html_url: `https://github.com/${owner}/${repo}`,
-          description: 'Repository information unavailable',
-          updated_at: new Date().toISOString(),
-          pushed_at: new Date().toISOString(),
-          default_branch: branch
-        },
-        latestRun: null,
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
     }
+
+    // Create final repository object
+    const finalRepo = repoData || {
+      id: 0,
+      name: repo,
+      full_name: `${owner}/${repo}`,
+      html_url: `https://github.com/${owner}/${repo}`,
+      description: `${repo} repository`,
+      updated_at: new Date().toISOString(),
+      pushed_at: new Date().toISOString(),
+      default_branch: branch
+    };
+
+    return {
+      repo: finalRepo,
+      latestRun,
+      isLoading: false,
+      error
+    };
   }, []);
 
   const fetchAllStatuses = useCallback(async () => {
-    // Don't start new requests if component is unmounted
-    if (!isMountedRef.current) return;
-    
-    // Cancel any pending requests
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    if (!enabled || !isMountedRef.current) {
+      return;
     }
-    
-    // Create new abort controller for this batch
-    abortControllerRef.current = new AbortController();
-    
+
+    console.log('Starting to fetch all repository statuses');
     setIsLoading(true);
     
-    // Update each repository status individually as they complete
-    repositories.forEach(async ({ owner, repo, branch }, index) => {
-      // Check if still mounted before each request
-      if (!isMountedRef.current) return;
-      
-      try {
-        const result = await fetchRepositoryStatus(owner, repo, branch);
-        
-        // Check if still mounted before updating state
-        if (!isMountedRef.current) return;
-        
-        setStatuses(prevStatuses => {
-          const newStatuses = [...prevStatuses];
-          newStatuses[index] = result;
-          return newStatuses;
-        });
-      } catch (error) {
-        // Don't log errors if request was aborted due to unmount
-        if (!isMountedRef.current) return;
-        
-        console.error(`Error fetching status for ${owner}/${repo}:`, error);
-        setStatuses(prevStatuses => {
-          const newStatuses = [...prevStatuses];
-          newStatuses[index] = {
-            ...prevStatuses[index],
-            isLoading: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
-          };
-          return newStatuses;
-        });
-      }
-    });
+    try {
+      // Fetch all repositories in parallel for better performance
+      const results = await Promise.all(
+        repositories.map(({ owner, repo, branch }) => 
+          fetchRepositoryStatus(owner, repo, branch)
+        )
+      );
 
-    // Set overall loading to false after a short delay to allow individual updates
-    setTimeout(() => {
       if (isMountedRef.current) {
-        setIsLoading(false);
+        console.log('Successfully fetched all statuses');
+        setStatuses(results);
         setLastUpdated(new Date());
       }
-    }, 1000);
-  }, [repositories, fetchRepositoryStatus]);
-
-  const refreshStatuses = useCallback(() => {
-    fetchAllStatuses();
-  }, [fetchAllStatuses]);
-
-  useEffect(() => {
-    fetchAllStatuses();
-  }, [fetchAllStatuses]);
-
-  useEffect(() => {
-    if (refreshInterval > 0) {
-      const interval = setInterval(fetchAllStatuses, refreshInterval);
-      return () => clearInterval(interval);
+    } catch (error) {
+      console.error('Error fetching statuses:', error);
+      
+      // On complete failure, show error states for all repos
+      if (isMountedRef.current) {
+        const errorStatuses = repositories.map(({ owner, repo, branch = 'main' }) => ({
+          repo: {
+            id: 0,
+            name: repo,
+            full_name: `${owner}/${repo}`,
+            html_url: `https://github.com/${owner}/${repo}`,
+            description: `${repo} repository`,
+            updated_at: new Date().toISOString(),
+            pushed_at: new Date().toISOString(),
+            default_branch: branch
+          },
+          latestRun: null,
+          isLoading: false,
+          error: 'Network error'
+        }));
+        setStatuses(errorStatuses);
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
-  }, [fetchAllStatuses, refreshInterval]);
+  }, [repositories, fetchRepositoryStatus, enabled]);
+
+  // Only fetch on mount if enabled
+  useEffect(() => {
+    if (enabled) {
+      fetchAllStatuses();
+    }
+  }, [enabled]); // Only depend on enabled to avoid re-fetching
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
     };
   }, []);
 
@@ -210,6 +148,6 @@ export const useGitHubStatus = ({
     statuses,
     isLoading,
     lastUpdated,
-    refreshStatuses
+    refreshStatuses: fetchAllStatuses
   };
 };

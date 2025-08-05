@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box, Typography, Paper, Container, Card, CardContent, Chip, IconButton, Tooltip, CircularProgress } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -11,7 +11,7 @@ import { colorPalettes } from '../../store/slices/themeSlice';
 import { useGitHubStatus } from '../../hooks/useGitHubStatus';
 import { RepositoryStatus } from '../../types/github';
 
-const HealthSection: React.FC = () => {
+const CicdDashboardSection: React.FC = () => {
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
   const currentSection = useAppSelector((state) => state.navigation.currentSection);
   const palette = colorPalettes[currentPalette];
@@ -25,12 +25,20 @@ const HealthSection: React.FC = () => {
   // Only fetch data when this section is active
   const { statuses, isLoading, lastUpdated, refreshStatuses } = useGitHubStatus({
     repositories,
-    refreshInterval: currentSection === 'health' ? 900000 : 0 // Only refresh when active
+    enabled: currentSection === 'cicd' // Only fetch when this section is active
   });
 
   const getStatusIcon = (status: RepositoryStatus) => {
+    if (status.isLoading) {
+      return <PendingIcon sx={{ fontSize: '3rem', color: palette.secondary }} />;
+    }
+
     if (status.error) {
-      return <ErrorIcon sx={{ fontSize: '3rem', color: palette.accent }} />;
+      // Different colors for different error types
+      const errorColor = status.error.includes('workflow') || status.error.includes('No Workflows') 
+        ? '#FF9800' // Orange for missing workflows (warning)
+        : palette.accent; // Red for other errors
+      return <ErrorIcon sx={{ fontSize: '3rem', color: errorColor }} />;
     }
 
     if (!status.latestRun) {
@@ -50,7 +58,15 @@ const HealthSection: React.FC = () => {
   };
 
   const getStatusColor = (status: RepositoryStatus) => {
-    if (status.error) return palette.accent;
+    if (status.isLoading) return palette.secondary;
+    
+    if (status.error) {
+      // Different colors for different error types
+      return status.error.includes('workflow') || status.error.includes('No Workflows') 
+        ? '#FF9800' // Orange for missing workflows
+        : palette.accent; // Red for other errors
+    }
+    
     if (!status.latestRun) return palette.text;
     
     switch (status.latestRun.conclusion) {
@@ -83,17 +99,18 @@ const HealthSection: React.FC = () => {
     <Container 
       maxWidth="lg" 
       sx={{ 
-        py: 2,
+        py: { xs: 1, md: 2 },
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        minHeight: 0
       }}
     >
       <Paper 
         elevation={6} 
         sx={{ 
-          p: 3,
+          p: { xs: 2, md: 3 },
           backgroundColor: palette.background + 'E6',
           border: `2px solid ${palette.border}`,
           borderRadius: '12px',
@@ -102,10 +119,11 @@ const HealthSection: React.FC = () => {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          minHeight: 0
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: { xs: 1, md: 2 }, flexShrink: 0 }}>
           <Typography 
             variant="h4" 
             sx={{ 
@@ -115,7 +133,7 @@ const HealthSection: React.FC = () => {
               textAlign: 'center',
               textTransform: 'uppercase',
               letterSpacing: '2px',
-              fontSize: { xs: '1.8rem', md: '2.2rem' }
+              fontSize: { xs: '1.5rem', sm: '1.8rem', md: '2.2rem' }
             }}
           >
             CI/CD Dashboard
@@ -129,18 +147,19 @@ const HealthSection: React.FC = () => {
             variant="body2" 
             sx={{ 
               color: palette.text, 
-              mb: 2, 
+              mb: { xs: 1, md: 2 }, 
               textAlign: 'center',
               fontFamily: 'monospace',
               opacity: 0.7,
-              fontSize: '0.75rem'
+              fontSize: '0.75rem',
+              flexShrink: 0
             }}
           >
             Last updated: {formatDate(lastUpdated.toISOString())}
           </Typography>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: -2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 2, md: 3 }, flexShrink: 0 }}>
           <Tooltip title="Refresh Status">
             <IconButton 
               onClick={refreshStatuses}
@@ -160,22 +179,27 @@ const HealthSection: React.FC = () => {
 
         <Box sx={{ 
           display: 'grid', 
-          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-          gap: 2,
+          gridTemplateColumns: { 
+            xs: '1fr', 
+            sm: 'repeat(2, 1fr)', 
+            lg: 'repeat(3, 1fr)' 
+          },
+          gap: { xs: 1.5, md: 2 },
           flex: 1,
           minHeight: 0,
           overflow: 'auto',
           pr: 1, // Account for scrollbar
           pt: 1, // Padding top to allow room for hover transform
           pb: 1, // Padding bottom for symmetry
-          alignContent: 'center', // Center cards vertically in the grid
+          alignContent: 'start', // Align cards to start
           justifyContent: 'center' // Center cards horizontally in the grid
         }}>
           {statuses.map((status, index) => (
             <Card 
               key={status.repo.full_name}
               sx={{ 
-                height: '400px', // Fixed height for all cards
+                minHeight: { xs: '300px', md: '350px' }, // Responsive minimum height
+                maxHeight: { xs: '400px', md: '450px' }, // Maximum height to prevent overflow
                 display: 'flex',
                 flexDirection: 'column',
                 backgroundColor: palette.background + 'CC',
@@ -191,17 +215,23 @@ const HealthSection: React.FC = () => {
               }}
             >
               <CardContent sx={{ 
-                p: 2, 
+                p: { xs: 1.5, md: 2 }, 
                 textAlign: 'center',
                 height: '100%',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                overflow: 'hidden'
               }}>
-                <Box sx={{ mb: 1.5 }}>
-                  {getStatusIcon(status)}
+                <Box sx={{ mb: { xs: 1, md: 1.5 } }}>
+                  {React.cloneElement(getStatusIcon(status), {
+                    sx: { 
+                      fontSize: { xs: '2.5rem', md: '3rem' }, 
+                      color: getStatusIcon(status).props.sx.color 
+                    }
+                  })}
                 </Box>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: { xs: 1, md: 1.5 } }}>
                   <Typography 
                     variant="h6" 
                     sx={{ 
@@ -209,7 +239,7 @@ const HealthSection: React.FC = () => {
                       fontFamily: 'monospace',
                       textShadow: `0 0 5px ${palette.secondary}60`,
                       mr: 1,
-                      fontSize: { xs: '1rem', md: '1.25rem' }
+                      fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
                     }}
                   >
                     {status.repo.name}
@@ -239,16 +269,16 @@ const HealthSection: React.FC = () => {
                   variant="body2" 
                   sx={{ 
                     color: palette.text, 
-                    mb: 2,
+                    mb: { xs: 1.5, md: 2 },
                     fontFamily: 'monospace',
                     opacity: status.isLoading ? 0.6 : 0.8,
                     fontStyle: status.isLoading ? 'italic' : 'normal',
-                    fontSize: '0.8rem',
+                    fontSize: { xs: '0.7rem', md: '0.8rem' },
                     lineHeight: 1.3,
-                    height: '3.9rem', // Fixed height for 3 lines
+                    height: { xs: '3rem', md: '3.9rem' }, // Responsive height
                     overflow: 'hidden',
                     display: '-webkit-box',
-                    WebkitLineClamp: 3,
+                    WebkitLineClamp: { xs: 2, md: 3 }, // Fewer lines on mobile
                     WebkitBoxOrient: 'vertical',
                     textOverflow: 'ellipsis'
                   }}
@@ -265,8 +295,14 @@ const HealthSection: React.FC = () => {
                 {status.error ? (
                   <Box>
                     <Chip 
-                      label={status.error.includes('rate limit') ? "Rate Limited" : "API Error"} 
-                      color="error" 
+                      label={
+                        status.error.includes('rate limit') ? "Rate Limited" :
+                        status.error.includes('Connection') ? "Offline" :
+                        status.error.includes('workflow') ? "No Workflows" :
+                        status.error.includes('not found') ? "Not Found" :
+                        "API Error"
+                      } 
+                      color={status.error.includes('workflow') ? "warning" : "error"}
                       size="small"
                       sx={{ mb: 1.5, fontFamily: 'monospace', fontSize: '0.7rem' }}
                     />
@@ -417,4 +453,4 @@ const HealthSection: React.FC = () => {
   );
 };
 
-export default HealthSection;
+export default CicdDashboardSection;

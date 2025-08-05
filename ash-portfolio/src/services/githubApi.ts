@@ -5,7 +5,7 @@ export class GitHubApiService {
   private static async tryServerSideApi<T>(
     apiPath: string,
     fallbackFn: () => Promise<T>
-  ): Promise<T> {
+  ): Promise<T | null> {
     try {
       // Try server-side API first (works when deployed with serverless functions)
       const response = await fetch(apiPath);
@@ -14,17 +14,27 @@ export class GitHubApiService {
         return response.json();
       }
       
-      // If server-side API fails, fall back to client-side
-      console.log('Server-side API not available, falling back to client-side');
-      return fallbackFn();
+      // If server-side API doesn't work, try client-side fallback
+      console.log(`Server-side API failed (${response.status}), trying client-side fallback`);
+      try {
+        return await fallbackFn();
+      } catch (fallbackError) {
+        console.log('Client-side fallback also failed:', fallbackError);
+        return null;
+      }
     } catch (error) {
-      // If server-side API fails, fall back to client-side
-      console.log('Server-side API error, falling back to client-side:', error);
-      return fallbackFn();
+      // On network errors, try client-side fallback
+      console.log('Server-side API network error, trying client-side fallback:', error);
+      try {
+        return await fallbackFn();
+      } catch (fallbackError) {
+        console.log('Client-side fallback also failed:', fallbackError);
+        return null;
+      }
     }
   }
 
-  static async getRepository(owner: string, repo: string): Promise<GitHubRepository> {
+  static async getRepository(owner: string, repo: string): Promise<GitHubRepository | null> {
     return this.tryServerSideApi(
       `/api/github/repository?owner=${owner}&repo=${repo}`,
       () => GitHubApiClientService.getRepository(owner, repo)
@@ -36,7 +46,7 @@ export class GitHubApiService {
     repo: string, 
     branch: string = 'main',
     perPage: number = 1
-  ): Promise<GitHubWorkflowRunsResponse> {
+  ): Promise<GitHubWorkflowRunsResponse | null> {
     const params = new URLSearchParams({
       owner,
       repo,
@@ -53,7 +63,7 @@ export class GitHubApiService {
   static async getLatestWorkflowRun(owner: string, repo: string, branch: string = 'main') {
     try {
       const runs = await this.getWorkflowRuns(owner, repo, branch, 1);
-      return runs.workflow_runs[0] || null;
+      return runs?.workflow_runs?.[0] || null;
     } catch (error) {
       console.error(`Error fetching latest workflow run for ${owner}/${repo}:`, error);
       return null;

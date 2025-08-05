@@ -2,7 +2,19 @@
 
 Notes written by a human being in regard to using generative coding tools.
 
+## Tips
+
+- Focus less on trying to maintain the code architecture if wanting to go full-generative.
+  - Instead, divide features by folders and try to reduce 'global' code. This way, multiple coding agents can be used in the same code base without stepping over each other. Also, it helps keep their context + scope.
+    - Also, helps with being able to commit 'good' code from 1 agent working on 1 feature, and discard or wait on committing changes from another agent working on another feature that may not ready to be committed.
+  - Once using generative code, it's unlikely manual coding will happen often. A certain level of understanding needs to happen for when issues arise. 
+- Mix use of LLMs. Some do better with certain types of coding tasks than other (UI vs backend, testing, large changes vs small tweaks, bugfixes, etc.)
+
 ## Which Models, which Tools?
+
+### Current Favorite
+
+Copilot Chat with Claude Sonnet 4 has been doing well. Curious to know where this ones strengths/weaknesses are compared to the Zencoder blended model.
 
 ### Zencoder with VS Code
 

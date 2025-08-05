@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type NavigationSection = 'about' | 'fun' | 'health' | 'music';
+export type NavigationSection = 'about' | 'fun' | 'cicd' | 'music';
 
 interface NavigationState {
   currentSection: NavigationSection;

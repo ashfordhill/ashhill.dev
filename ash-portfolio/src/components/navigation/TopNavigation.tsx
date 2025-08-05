@@ -41,7 +41,7 @@ const TopNavigation: React.FC = () => {
   const navigationItems: { key: NavigationSection; label: string }[] = [
     { key: 'about', label: 'ABOUT' },
     { key: 'fun', label: 'PATHFINDER' },
-    { key: 'health', label: 'CI/CD' },
+    { key: 'cicd', label: 'CI/CD' },
     { key: 'music', label: 'MUSIC' },
   ];
 
