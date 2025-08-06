@@ -6,10 +6,12 @@ import TopNavigation from './navigation/TopNavigation';
 import MainContent from './MainContent';
 import { useAppSelector } from '../store/hooks';
 import { colorPalettes } from '../store/slices/themeSlice';
+import useIsMobile from '../hooks/useIsMobile';
 
 const AppContent: React.FC = () => {
   const currentPalette = useAppSelector((state) => state.theme.currentPalette);
   const palette = colorPalettes[currentPalette];
+  const isMobile = useIsMobile();
 
   return (
     <Box sx={{
@@ -72,11 +74,12 @@ const AppContent: React.FC = () => {
 
       {/* Main Content Container */}
       <Box sx={{ 
-        maxWidth: { xs: '95%', sm: '90%', md: '85%', lg: '80%' },
+        maxWidth: isMobile ? '98%' : { xs: '95%', sm: '90%', md: '85%', lg: '80%' },
         mx: 'auto',
-        minHeight: '90vh',
-        pt: 2,
-        pb: 2,
+        minHeight: isMobile ? '95vh' : '90vh',
+        pt: isMobile ? 1 : 2,
+        pb: isMobile ? 1 : 2,
+        px: isMobile ? 1 : 0,
         position: 'relative',
         // 3D Depth Effect
         '&::before': {
@@ -99,7 +102,7 @@ const AppContent: React.FC = () => {
           zIndex: -1,
         }
       }}>
-        <TopNavigation />
+        {!isMobile && <TopNavigation />}
         <MainContent />
       </Box>
 

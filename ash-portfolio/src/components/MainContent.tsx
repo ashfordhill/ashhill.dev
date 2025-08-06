@@ -5,11 +5,13 @@ import AboutSection from './sections/AboutSection';
 import FunSection from './sections/FunSection';
 import CicdDashboardSection from './sections/CicdDashboardSection';
 import SimpleMusicPlayer from './sections/SimpleMusicPlayer';
+import useIsMobile from '../hooks/useIsMobile';
 
 const MainContent: React.FC = () => {
   const currentSection = useAppSelector((state) => state.navigation.currentSection);
   const previousSectionRef = useRef(currentSection);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const isMobile = useIsMobile();
 
   // Force cleanup when section changes
   useEffect(() => {
@@ -34,6 +36,13 @@ const MainContent: React.FC = () => {
   }, [currentSection]);
 
   const renderSection = () => {
+    // Mobile-first approach: On mobile devices, always show About section
+    // This provides a clean, focused experience since other components
+    // (pathfinder, CICD, music) don't render well on small screens
+    if (isMobile) {
+      return <AboutSection key={`about-mobile-${Date.now()}`} />;
+    }
+
     // Don't render during transitions to ensure proper cleanup
     if (isTransitioning) {
       return (
@@ -49,7 +58,7 @@ const MainContent: React.FC = () => {
       );
     }
 
-    // Only render the current section to ensure proper cleanup
+    // Only render the current section to ensure proper cleanup (desktop only)
     switch (currentSection) {
       case 'about':
         return <AboutSection key={`about-${Date.now()}`} />;
@@ -66,8 +75,11 @@ const MainContent: React.FC = () => {
 
   return (
     <Box sx={{ 
-      height: { 
-        xs: 'calc(100vh - 120px)', // Mobile: account for smaller nav
+      height: isMobile ? {
+        xs: 'calc(100vh - 40px)', // Mobile: no nav, just padding
+        sm: 'calc(100vh - 60px)',  // Small mobile: no nav, just padding
+      } : { 
+        xs: 'calc(100vh - 120px)', // Mobile: account for smaller nav (fallback)
         sm: 'calc(100vh - 140px)',  // Tablet: account for medium nav
         md: 'calc(100vh - 160px)'   // Desktop: account for full nav
       },

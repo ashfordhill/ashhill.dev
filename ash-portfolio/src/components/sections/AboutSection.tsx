@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Paper, Container, IconButton, Tooltip, Button, Chip } from '@mui/material';
-import { LinkedIn, GitHub, Email, Terminal, PlayArrow } from '@mui/icons-material';
+import { LinkedIn, GitHub, Email, Terminal, PlayArrow, PhoneAndroid } from '@mui/icons-material';
 import { useAppSelector } from '../../store/hooks';
 import { colorPalettes } from '../../store/slices/themeSlice';
+import useIsMobile from '../../hooks/useIsMobile';
 
 interface TerminalCommand {
   command: string;
@@ -82,6 +83,7 @@ const AboutSection: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
   const terminalRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const commands: TerminalCommand[] = [
     { 
@@ -93,7 +95,7 @@ const AboutSection: React.FC = () => {
     { 
       command: 'ls -la skills/', 
       description: 'List my skills',
-      output: 'total 8\ndrwxr-xr-x  2 ash  users  4096 Aug  4 12:34 .\ndrwxr-xr-x 14 ash  users  4096 Aug  4 12:34 ..\n-rwxr-xr-x  1 ash  users   256 Jul 25 09:15 JavaScript\n-rwxr-xr-x  1 ash  users   512 Aug  1 14:22 TypeScript\n-rwxr-xr-x  1 ash  users   128 Jul 30 18:45 React\n-rwxr-xr-x  1 ash  users   256 Aug  3 22:10 Node.js\n-rwxr-xr-x  1 ash  users   128 Jul 28 16:37 Python\n-rwxr-xr-x  1 ash  users   64  Aug  2 10:15 Docker\n-rwxr-xr-x  1 ash  users   32  Jul 29 14:30 AWS',
+      output: 'total 4\ndrwxr-xr-x  2 ash  users  4096 Aug  4 12:34 .\ndrwxr-xr-x 14 ash  users  4096 Aug  4 12:34 ..\n-rwxr-xr-x  1 ash  users   512 Aug  1 14:22 TypeScript\n-rwxr-xr-x  1 ash  users   128 Jul 30 18:45 React\n-rwxr-xr-x  1 ash  users   128 Jul 28 16:37 Python\n-rwxr-xr-x  1 ash  users   64  Aug  2 10:15 Docker',
       color: '#2196F3'
     },
     { 
@@ -103,9 +105,9 @@ const AboutSection: React.FC = () => {
       color: '#FF9800'
     },
     { 
-      command: 'echo $MOTTO', 
-      description: 'My motto',
-      output: '"Build things that matter, automate the rest" 🤖',
+      command: 'printenv CORE_VALUES', 
+      description: 'My core values',
+      output: '• Collaboration\n• Curiosity\n• Empathy\n• Imagination',
       color: '#9C27B0'
     },
     { 
@@ -208,6 +210,31 @@ const AboutSection: React.FC = () => {
         >
           About Me
         </Typography>
+
+        {/* Mobile Mode Indicator */}
+        {isMobile && (
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            mb: 2,
+            flexShrink: 0
+          }}>
+            <Chip
+              icon={<PhoneAndroid />}
+              label="Mobile View - Desktop version has more!"
+              sx={{
+                backgroundColor: palette.accent + '20',
+                border: `1px solid ${palette.accent}60`,
+                color: palette.accent,
+                fontFamily: 'monospace',
+                fontSize: '0.8rem',
+                '& .MuiChip-icon': {
+                  color: palette.accent,
+                }
+              }}
+            />
+          </Box>
+        )}
 
         {/* Contact Buttons */}
         <Box sx={{ 
