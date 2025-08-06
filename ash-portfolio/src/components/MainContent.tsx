@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import { useAppSelector } from '../store/hooks';
-import { colorPalettes } from '../store/slices/themeSlice';
 import AboutSection from './sections/AboutSection';
 import FunSection from './sections/FunSection';
 import CicdDashboardSection from './sections/CicdDashboardSection';
@@ -9,7 +8,6 @@ import SimpleMusicPlayer from './sections/SimpleMusicPlayer';
 
 const MainContent: React.FC = () => {
   const currentSection = useAppSelector((state) => state.navigation.currentSection);
-  const currentPalette = useAppSelector((state) => state.theme.currentPalette);
   const previousSectionRef = useRef(currentSection);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -62,7 +60,7 @@ const MainContent: React.FC = () => {
       case 'music':
         return <SimpleMusicPlayer key={`music-${Date.now()}`} />;
       default:
-        return <FunSection key={`fun-default-${Date.now()}`} />;
+        return <AboutSection key={`about-default-${Date.now()}`} />;
     }
   };
 

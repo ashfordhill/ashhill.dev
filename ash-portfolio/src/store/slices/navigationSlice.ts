@@ -7,7 +7,7 @@ interface NavigationState {
 }
 
 const initialState: NavigationState = {
-  currentSection: 'fun', // Default to Fun section (which contains Pathfinder)
+  currentSection: 'about', // Default to About section
 };
 
 const navigationSlice = createSlice({
