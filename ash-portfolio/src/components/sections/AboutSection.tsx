@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Paper, Container, IconButton, Tooltip, Button, Chip } from '@mui/material';
-import { LinkedIn, GitHub, Email, LocationOn, Terminal, PlayArrow } from '@mui/icons-material';
+import { LinkedIn, GitHub, Email, Terminal, PlayArrow } from '@mui/icons-material';
 import { useAppSelector } from '../../store/hooks';
 import { colorPalettes } from '../../store/slices/themeSlice';
 
@@ -274,23 +274,7 @@ const AboutSection: React.FC = () => {
               <Email />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Location: San Francisco, CA">
-            <IconButton
-              aria-label="Location"
-              sx={{
-                backgroundColor: palette.secondary + '20',
-                border: `2px solid ${palette.secondary}`,
-                color: palette.primary,
-                transition: 'all 0.3s',
-                '&:hover': {
-                  backgroundColor: palette.secondary + '40',
-                  boxShadow: `0 0 10px ${palette.primary}80`,
-                },
-              }}
-            >
-              <LocationOn />
-            </IconButton>
-          </Tooltip>
+
         </Box>
 
         {/* Main Content Area */}

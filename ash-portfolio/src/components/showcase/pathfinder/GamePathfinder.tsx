@@ -16,7 +16,6 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 const GRID_WIDTH = 35;
 const GRID_HEIGHT = 20;
 const CELL_SIZE = 20;
-const MAX_CARS = 8;
 const ANIMATION_SPEED = 150; // ms between moves
 
 // Car interface
@@ -168,7 +167,7 @@ const GamePathfinder: React.FC = () => {
 
   // Initialize cars
   const initializeCars = useCallback((algorithmToUse?: Algorithm) => {
-    const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff', '#ff8844', '#8844ff'];
+    const colors = ['#ff4444', '#44ff44', '#4444ff'];
     const newCars: Car[] = [];
     
     // Use the provided algorithm or fall back to the current state
@@ -176,8 +175,9 @@ const GamePathfinder: React.FC = () => {
     
     console.log('Initializing cars with algorithm:', currentAlgorithm);
 
-    for (let i = 0; i < Math.min(MAX_CARS, spawnPoints.length * 3); i++) {
-      const spawnPoint = spawnPoints[i % spawnPoints.length];
+    // Create one car per spawn point
+    for (let i = 0; i < spawnPoints.length; i++) {
+      const spawnPoint = spawnPoints[i];
       const pathfinder = getPathfindingFunction(currentAlgorithm);
       const path = pathfinder(spawnPoint, targetPoint, {
         grid,
@@ -493,16 +493,9 @@ const GamePathfinder: React.FC = () => {
                 borderRadius: '50%',
                 border: '2px solid #fff',
                 transition: `all ${ANIMATION_SPEED * 0.8}ms ease-in-out`,
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                zIndex: 10
               }}
-            >
-              <Typography sx={{ fontSize: '8px', color: '#fff', fontWeight: 'bold' }}>
-                {car.id + 1}
-              </Typography>
-            </Box>
+            />
           ))}
 
           {/* Path visualization */}
@@ -526,11 +519,29 @@ const GamePathfinder: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Stats */}
-      <Box sx={{ mt: 2, textAlign: 'center' }}>
-        <Typography sx={{ color: palette.text, fontSize: '14px' }}>
-          Algorithm: {algorithm} | Cars: {cars.length} | Status: {isRunning ? 'Running' : 'Paused'}
+      {/* Path Information */}
+      <Box sx={{ mt: 2, textAlign: 'center', maxWidth: '600px' }}>
+        <Typography sx={{ color: palette.text, fontSize: '16px', fontWeight: 'bold', mb: 1 }}>
+          Car Paths ({algorithm} Algorithm)
         </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+          {cars.map(car => (
+            <Box key={car.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  backgroundColor: car.color,
+                  borderRadius: '50%',
+                  border: '1px solid #fff'
+                }}
+              />
+              <Typography sx={{ color: palette.text, fontSize: '12px' }}>
+                {car.path.length > 0 ? `${car.path.length} steps` : 'No path'}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
       </Box>
     </Box>
   );
