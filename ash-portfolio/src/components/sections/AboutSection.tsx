@@ -111,6 +111,12 @@ const AboutSection: React.FC = () => {
       color: '#9C27B0'
     },
     { 
+      command: 'find . -name "influences"', 
+      description: 'creators I follow',
+      output: 'Malcolm Gladwell - author of widely appraised books in social sciences\nTyson Yunkaporta - Aboriginal author that ties indigenous wisdom to the modern world\nRupert Sheldrake - particularly his theory of morphic resonance\nAaron Bridenbach - open-minded physicist interested in quantum consciousness',
+      color: '#00BCD4'
+    },
+    { 
       command: 'echo "$(flip table)"', 
       description: 'DO IT',
       output: '(╯°□°)╯︵ ┻━┻',
@@ -147,7 +153,7 @@ const AboutSection: React.FC = () => {
     const prompt = '\x1b[1;32mash@portfolio\x1b[0m:\x1b[1;34m~\x1b[0m$ ';
     const commandText = `\x1b[1;33m${cmd.command}\x1b[0m`;
     
-    if (cmd.command === 'clear') {
+    if (cmd.command === 'clear terminal') {
       setTerminalOutput('');
       setCurrentInput('');
       return;
