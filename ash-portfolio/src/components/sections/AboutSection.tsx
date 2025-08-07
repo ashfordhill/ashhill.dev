@@ -88,31 +88,37 @@ const AboutSection: React.FC = () => {
   const commands: TerminalCommand[] = [
     { 
       command: 'whoami', 
-      description: 'Who am I?',
+      description: '',
       output: 'Ash Hill - Software Engineer',
       color: '#4CAF50'
     },
     { 
       command: 'ls -la exp/', 
-      description: 'List my experience',
+      description: 'familiar tech',
       output: 'total 4\ndrwxr-xr-x  2 ash  users  4096 Aug  4 12:34 .\ndrwxr-xr-x 14 ash  users  4096 Aug  4 12:34 ..\n-rwxr-xr-x  1 ash  users   512 Aug  1 14:22 TypeScript & React\n-rwxr-xr-x  1 ash  users   128 Jul 30 18:45 Java & Spring Boot\n-rwxr-xr-x  1 ash  users   128 Jul 28 16:37 Docker\n-rwxr-xr-x  1 ash  users   64  Aug  2 10:15 CICD',
       color: '#2196F3'
     },
     { 
       command: 'cat hobbies.txt', 
-      description: 'My hobbies',
-      output: '📚 Reading - mostly nonfiction\n🌱 Gardening - growing things brings me peace\n🎵 Music - listening & creating\n🚶 Walking - to connect with nature\n🐾 Animals - 🐶🐦🕷️🪼(❤️😺but allergic. when HypoCat vaccine!?)',
+      description: 'my hobbies',
+      output: '📚 Reading - mostly nonfiction\n🌱 Gardening - growing things brings me peace\n🎵 Music - listening & creating\n🚶 Walking - to connect with nature\n🐾 Animals - 🐶🐦🕷️(❤️😺but allergic. when HypoCat vaccine!?)',
       color: '#FF9800'
     },
     { 
       command: 'printenv CORE_VALUES', 
-      description: 'My core values',
+      description: 'my values',
       output: '• Collaboration\n• Curiosity\n• Empathy\n• Humility\n• Imagination',
       color: '#9C27B0'
     },
     { 
-      command: 'clear', 
-      description: 'Clear terminal',
+      command: 'echo "$(flip table)"', 
+      description: 'DO IT',
+      output: '(╯°□°)╯︵ ┻━┻',
+      color: '#E91E63'
+    },
+    { 
+      command: 'clear terminal', 
+      description: '',
       output: '',
       color: '#795548'
     }
