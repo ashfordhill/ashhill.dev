@@ -89,25 +89,25 @@ const AboutSection: React.FC = () => {
     { 
       command: 'whoami', 
       description: 'Who am I?',
-      output: 'Ash Hill - Software Developer & Builder of Things',
+      output: 'Ash Hill - Software Engineer',
       color: '#4CAF50'
     },
     { 
-      command: 'ls -la skills/', 
-      description: 'List my skills',
-      output: 'total 4\ndrwxr-xr-x  2 ash  users  4096 Aug  4 12:34 .\ndrwxr-xr-x 14 ash  users  4096 Aug  4 12:34 ..\n-rwxr-xr-x  1 ash  users   512 Aug  1 14:22 TypeScript\n-rwxr-xr-x  1 ash  users   128 Jul 30 18:45 React\n-rwxr-xr-x  1 ash  users   128 Jul 28 16:37 Python\n-rwxr-xr-x  1 ash  users   64  Aug  2 10:15 Docker',
+      command: 'ls -la exp/', 
+      description: 'List my experience',
+      output: 'total 4\ndrwxr-xr-x  2 ash  users  4096 Aug  4 12:34 .\ndrwxr-xr-x 14 ash  users  4096 Aug  4 12:34 ..\n-rwxr-xr-x  1 ash  users   512 Aug  1 14:22 TypeScript & React\n-rwxr-xr-x  1 ash  users   128 Jul 30 18:45 Java & Spring Boot\n-rwxr-xr-x  1 ash  users   128 Jul 28 16:37 Docker\n-rwxr-xr-x  1 ash  users   64  Aug  2 10:15 CICD',
       color: '#2196F3'
     },
     { 
       command: 'cat hobbies.txt', 
       description: 'My hobbies',
-      output: '📚 Reading - Always learning something new\n🌱 Gardening - Growing things brings me peace\n🎵 Music - Both listening and creating\n💻 Technology - Building cool stuff\n🐾 Pet Care - My critters keep me grounded',
+      output: '📚 Reading - mostly nonfiction\n🌱 Gardening - growing things brings me peace\n🎵 Music - listening & creating\n🚶 Walking - to connect with nature\n🐾 Animals - 🐶🐦🕷️🪼(❤️😺but allergic. when HypoCat vaccine!?)',
       color: '#FF9800'
     },
     { 
       command: 'printenv CORE_VALUES', 
       description: 'My core values',
-      output: '• Collaboration\n• Curiosity\n• Empathy\n• Imagination',
+      output: '• Collaboration\n• Curiosity\n• Empathy\n• Humility\n• Imagination',
       color: '#9C27B0'
     },
     { 
