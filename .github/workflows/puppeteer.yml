@@ -56,5 +56,9 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           git add -A
-          git commit -m "[ACTION] Update visual records"
-          git push origin HEAD:${{ github.ref }}
+          if git diff --staged --quiet; then
+            echo "No changes to commit, skipping commit step"
+          else
+            git commit -m "[ACTION] Update visual records"
+            git push origin HEAD:${{ github.ref }}
+          fi
