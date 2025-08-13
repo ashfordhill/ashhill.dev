@@ -80,11 +80,25 @@ const PixiAudioVisualizer: React.FC<PixiAudioVisualizerProps> = React.memo(({ au
     }
   }, [config]);
 
-  // Setup audio context
+  // Setup audio context with better error handling
   const setupAudioContext = useCallback(async () => {
-    if (!audioRef.current || sourceRef.current || isInitializedRef.current) return;
+    if (!audioRef.current) return;
 
     try {
+      // Reset if already initialized but context is closed
+      if (audioContextRef.current && audioContextRef.current.state === 'closed') {
+        audioContextRef.current = null;
+        sourceRef.current = null;
+        analyserRef.current = null;
+        isInitializedRef.current = false;
+      }
+
+      // Skip if already properly initialized
+      if (sourceRef.current && isInitializedRef.current && 
+          audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        return;
+      }
+
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
@@ -94,13 +108,19 @@ const PixiAudioVisualizer: React.FC<PixiAudioVisualizerProps> = React.memo(({ au
         await audioContextRef.current.resume();
       }
 
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      analyserRef.current.smoothingTimeConstant = 0.8;
-      
-      sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
-      sourceRef.current.connect(analyserRef.current);
-      analyserRef.current.connect(audioContextRef.current.destination);
+      // Only create new nodes if they don't exist
+      if (!analyserRef.current) {
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+      }
+
+      // Only create source if it doesn't exist
+      if (!sourceRef.current) {
+        sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
+        sourceRef.current.connect(analyserRef.current);
+        analyserRef.current.connect(audioContextRef.current.destination);
+      }
       
       dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
       isInitializedRef.current = true;
@@ -108,7 +128,10 @@ const PixiAudioVisualizer: React.FC<PixiAudioVisualizerProps> = React.memo(({ au
       console.log('AudioContext setup successful');
     } catch (error) {
       console.warn('AudioContext setup failed:', error);
+      // Create fallback data array
       dataArrayRef.current = new Uint8Array(config.barCount);
+      // Don't mark as initialized so it can retry later
+      isInitializedRef.current = false;
     }
   }, [audioRef, config.barCount]);
 
@@ -221,12 +244,27 @@ const PixiAudioVisualizer: React.FC<PixiAudioVisualizerProps> = React.memo(({ au
     return (r << 16) | (g << 8) | b;
   }, []);
 
-  // Start/stop animation
+  // Start/stop animation with retry logic
   useEffect(() => {
     if (isPlaying) {
       if (!isInitializedRef.current) {
         setupAudioContext();
+        // Retry setup after a delay if it failed
+        setTimeout(() => {
+          if (!isInitializedRef.current && isPlaying) {
+            console.log('Retrying audio context setup...');
+            setupAudioContext();
+          }
+        }, 1000);
       }
+      
+      // Resume AudioContext if suspended
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume().then(() => {
+          console.log('AudioContext resumed');
+        }).catch(console.warn);
+      }
+      
       animate();
     } else {
       if (animationRef.current) {

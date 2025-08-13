@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 import { store } from '../store';
 import TopNavigation from './navigation/TopNavigation';
 import MainContent from './MainContent';
+import AINotice from './common/AINotice';
 import { useAppSelector } from '../store/hooks';
 import { colorPalettes } from '../store/slices/themeSlice';
 import useIsMobile from '../hooks/useIsMobile';
@@ -23,6 +24,8 @@ const AppContent: React.FC = () => {
       `,
       position: 'relative',
       overflow: 'hidden',
+      // Add top padding to account for the AI notice
+      pt: { xs: '28px', sm: '32px', md: '36px' },
       // 3D Perspective Grid Lines
       '&::before': {
         content: '""',
@@ -70,7 +73,8 @@ const AppContent: React.FC = () => {
         zIndex: 10,
       }
     }}>
-
+      {/* AI Notice at the top */}
+      <AINotice />
 
       {/* Main Content Container */}
       <Box sx={{ 

@@ -233,7 +233,7 @@ const AboutSection: React.FC = () => {
           }}>
             <Chip
               icon={<PhoneAndroid />}
-              label="Mobile View - Desktop version has more!"
+              label="Mobile View - Limited content"
               sx={{
                 backgroundColor: palette.accent + '20',
                 border: `1px solid ${palette.accent}60`,
@@ -514,27 +514,7 @@ const AboutSection: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Disclaimer */}
-        <Box sx={{
-          p: { xs: 1.5, md: 2 },
-          border: `1px solid ${palette.border}`,
-          borderRadius: '8px',
-          backgroundColor: palette.background + '40',
-          textAlign: 'center',
-          mt: { xs: 1, md: 2 },
-          flexShrink: 0
-        }}>
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: palette.text + '80',
-              fontFamily: 'monospace',
-              fontSize: { xs: '0.7rem', md: '0.8rem' }
-            }}
-          >
-            💡 This portfolio was generated using various AI chatbots and models
-          </Typography>
-        </Box>
+
       </Paper>
     </Container>
   );

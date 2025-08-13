@@ -76,12 +76,12 @@ const MainContent: React.FC = () => {
   return (
     <Box sx={{ 
       height: isMobile ? {
-        xs: 'calc(100vh - 40px)', // Mobile: no nav, just padding
-        sm: 'calc(100vh - 60px)',  // Small mobile: no nav, just padding
+        xs: 'calc(100vh - 68px)', // Mobile: AI notice (28px) + padding (40px)
+        sm: 'calc(100vh - 92px)',  // Small mobile: AI notice (32px) + padding (60px)
       } : { 
-        xs: 'calc(100vh - 120px)', // Mobile: account for smaller nav (fallback)
-        sm: 'calc(100vh - 140px)',  // Tablet: account for medium nav
-        md: 'calc(100vh - 160px)'   // Desktop: account for full nav
+        xs: 'calc(100vh - 156px)', // Mobile: AI notice (36px) + nav (120px)
+        sm: 'calc(100vh - 172px)',  // Tablet: AI notice (32px) + nav (140px)
+        md: 'calc(100vh - 196px)'   // Desktop: AI notice (36px) + nav (160px)
       },
       minHeight: { xs: '400px', md: '500px' }, // Ensure minimum usable height
       maxHeight: '100vh', // Prevent overflow

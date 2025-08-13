@@ -12,10 +12,11 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-// Game constants
-const GRID_WIDTH = 35;
-const GRID_HEIGHT = 20;
-const CELL_SIZE = 20;
+// Game constants - now responsive and more compact
+const BASE_GRID_WIDTH = 28; // Reduced from 35
+const BASE_GRID_HEIGHT = 16; // Reduced from 20
+const MIN_CELL_SIZE = 8; // Reduced from 12
+const MAX_CELL_SIZE = 16; // Reduced from 24
 const ANIMATION_SPEED = 150; // ms between moves
 
 // Car interface
@@ -35,61 +36,110 @@ const GamePathfinder: React.FC = () => {
   const currentSection = useAppSelector((state) => state.navigation.currentSection);
   const palette = colorPalettes[currentPalette];
 
+  // Responsive dimensions
+  const [gridWidth, setGridWidth] = useState(BASE_GRID_WIDTH);
+  const [gridHeight, setGridHeight] = useState(BASE_GRID_HEIGHT);
+  const [cellSize, setCellSize] = useState(20);
+
   // Game state
   const [grid, setGrid] = useState<CellType[][]>([]);
   const [cars, setCars] = useState<Car[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [algorithm, setAlgorithm] = useState<Algorithm>('BFS');
   const [showPaths, setShowPaths] = useState(true);
-  const [spawnPoints] = useState<Position[]>([
-    { x: 1, y: 5 },
-    { x: 1, y: 10 },
-    { x: 1, y: 15 }
-  ]);
-  const [targetPoint] = useState<Position>({ x: GRID_WIDTH - 2, y: 10 });
+  // Dynamic spawn points and target based on grid size
+  const spawnPoints = React.useMemo<Position[]>(() => [
+    { x: 1, y: Math.floor(gridHeight * 0.25) },
+    { x: 1, y: Math.floor(gridHeight * 0.5) },
+    { x: 1, y: Math.floor(gridHeight * 0.75) }
+  ], [gridHeight]);
+  
+  const targetPoint = React.useMemo<Position>(() => ({ 
+    x: gridWidth - 2, 
+    y: Math.floor(gridHeight * 0.5) 
+  }), [gridWidth, gridHeight]);
 
-  // Refs for animation
+  // Refs for animation and sizing
   const animationRef = useRef<NodeJS.Timeout | null>(null);
   const carsRef = useRef<Car[]>([]);
   const isMountedRef = useRef(true); // Track if component is mounted
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Pause game when not in the fun section
   const isGameActive = currentSection === 'fun';
 
+  // Calculate optimal grid dimensions based on available space - more compact
+  const calculateOptimalDimensions = useCallback(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    
+    // More compact - reduce reserved space
+    const availableWidth = Math.max(250, containerRect.width - 280); // Reduced reserve space
+    const availableHeight = Math.max(150, containerRect.height - 80); // Reduced reserve space
+    
+    // Calculate optimal cell size that fits both dimensions
+    const maxCellSizeByWidth = Math.floor(availableWidth / BASE_GRID_WIDTH);
+    const maxCellSizeByHeight = Math.floor(availableHeight / BASE_GRID_HEIGHT);
+    const optimalCellSize = Math.max(MIN_CELL_SIZE, Math.min(MAX_CELL_SIZE, Math.min(maxCellSizeByWidth, maxCellSizeByHeight)));
+    
+    // Calculate grid dimensions that fit in the available space
+    const maxGridWidth = Math.floor(availableWidth / optimalCellSize);
+    const maxGridHeight = Math.floor(availableHeight / optimalCellSize);
+    
+    // Use smaller grid if needed, but maintain aspect ratio
+    const newGridWidth = Math.min(BASE_GRID_WIDTH, maxGridWidth);
+    const newGridHeight = Math.min(BASE_GRID_HEIGHT, maxGridHeight);
+    
+    // Only update if dimensions actually changed
+    if (newGridWidth !== gridWidth || newGridHeight !== gridHeight || optimalCellSize !== cellSize) {
+      setGridWidth(newGridWidth);
+      setGridHeight(newGridHeight);
+      setCellSize(optimalCellSize);
+    }
+  }, [gridWidth, gridHeight, cellSize]);
+
   // Initialize game grid (Complex maze with multiple paths)
   const initializeGrid = useCallback(() => {
-    const newGrid: CellType[][] = Array(GRID_HEIGHT).fill(null).map(() => 
-      Array(GRID_WIDTH).fill(CellType.WALL)
+    const newGrid: CellType[][] = Array(gridHeight).fill(null).map(() => 
+      Array(gridWidth).fill(CellType.WALL)
     );
 
     // Create a complex maze with multiple possible paths
     // Start by making everything a path, then add strategic obstacles
-    for (let y = 1; y < GRID_HEIGHT - 1; y++) {
-      for (let x = 1; x < GRID_WIDTH - 1; x++) {
+    for (let y = 1; y < gridHeight - 1; y++) {
+      for (let x = 1; x < gridWidth - 1; x++) {
         newGrid[y][x] = CellType.PATH;
       }
     }
 
-    // Add strategic obstacles to create multiple path options
+    // Add strategic obstacles to create multiple path options (scaled to grid size)
+    const scaleX = gridWidth / BASE_GRID_WIDTH;
+    const scaleY = gridHeight / BASE_GRID_HEIGHT;
+    
     const obstacles = [
-      // Central building blocks
-      { x: 8, y: 6, width: 3, height: 2 },
-      { x: 12, y: 8, width: 2, height: 3 },
-      { x: 18, y: 5, width: 4, height: 2 },
-      { x: 25, y: 7, width: 2, height: 4 },
-      { x: 6, y: 12, width: 3, height: 2 },
-      { x: 15, y: 14, width: 4, height: 2 },
-      { x: 22, y: 12, width: 2, height: 3 },
-      { x: 28, y: 15, width: 3, height: 2 },
+      // Central building blocks (scaled)
+      { x: Math.floor(8 * scaleX), y: Math.floor(6 * scaleY), width: Math.max(1, Math.floor(3 * scaleX)), height: Math.max(1, Math.floor(2 * scaleY)) },
+      { x: Math.floor(12 * scaleX), y: Math.floor(8 * scaleY), width: Math.max(1, Math.floor(2 * scaleX)), height: Math.max(1, Math.floor(3 * scaleY)) },
+      { x: Math.floor(18 * scaleX), y: Math.floor(5 * scaleY), width: Math.max(1, Math.floor(4 * scaleX)), height: Math.max(1, Math.floor(2 * scaleY)) },
+      { x: Math.floor(25 * scaleX), y: Math.floor(7 * scaleY), width: Math.max(1, Math.floor(2 * scaleX)), height: Math.max(1, Math.floor(4 * scaleY)) },
+      { x: Math.floor(6 * scaleX), y: Math.floor(12 * scaleY), width: Math.max(1, Math.floor(3 * scaleX)), height: Math.max(1, Math.floor(2 * scaleY)) },
+      { x: Math.floor(15 * scaleX), y: Math.floor(14 * scaleY), width: Math.max(1, Math.floor(4 * scaleX)), height: Math.max(1, Math.floor(2 * scaleY)) },
+      { x: Math.floor(22 * scaleX), y: Math.floor(12 * scaleY), width: Math.max(1, Math.floor(2 * scaleX)), height: Math.max(1, Math.floor(3 * scaleY)) },
+      { x: Math.floor(28 * scaleX), y: Math.floor(15 * scaleY), width: Math.max(1, Math.floor(3 * scaleX)), height: Math.max(1, Math.floor(2 * scaleY)) },
       
-      // Smaller obstacles for path variety
-      { x: 4, y: 8, width: 1, height: 2 },
-      { x: 16, y: 4, width: 1, height: 1 },
-      { x: 20, y: 9, width: 1, height: 1 },
-      { x: 30, y: 6, width: 1, height: 2 },
-      { x: 10, y: 16, width: 1, height: 1 },
-      { x: 26, y: 4, width: 1, height: 1 },
-    ];
+      // Smaller obstacles for path variety (scaled)
+      { x: Math.floor(4 * scaleX), y: Math.floor(8 * scaleY), width: 1, height: Math.max(1, Math.floor(2 * scaleY)) },
+      { x: Math.floor(16 * scaleX), y: Math.floor(4 * scaleY), width: 1, height: 1 },
+      { x: Math.floor(20 * scaleX), y: Math.floor(9 * scaleY), width: 1, height: 1 },
+      { x: Math.floor(30 * scaleX), y: Math.floor(6 * scaleY), width: 1, height: Math.max(1, Math.floor(2 * scaleY)) },
+      { x: Math.floor(10 * scaleX), y: Math.floor(16 * scaleY), width: 1, height: 1 },
+      { x: Math.floor(26 * scaleX), y: Math.floor(4 * scaleY), width: 1, height: 1 },
+    ].filter(obstacle => 
+      obstacle.x >= 1 && obstacle.x < gridWidth - 1 && 
+      obstacle.y >= 1 && obstacle.y < gridHeight - 1
+    );
 
     // Place obstacles
     obstacles.forEach(({ x, y, width, height }) => {
@@ -97,7 +147,7 @@ const GamePathfinder: React.FC = () => {
         for (let dx = 0; dx < width; dx++) {
           const newX = x + dx;
           const newY = y + dy;
-          if (newX >= 1 && newX < GRID_WIDTH - 1 && newY >= 1 && newY < GRID_HEIGHT - 1) {
+          if (newX >= 1 && newX < gridWidth - 1 && newY >= 1 && newY < gridHeight - 1) {
             newGrid[newY][newX] = CellType.WALL;
           }
         }
@@ -105,22 +155,35 @@ const GamePathfinder: React.FC = () => {
     });
 
     // Ensure there are always clear paths from spawn to target
-    // Create guaranteed horizontal corridors
-    const corridors = [3, 10, 16];
+    // Create guaranteed horizontal corridors (scaled)
+    const corridors = [
+      Math.floor(3 * scaleY), 
+      Math.floor(gridHeight * 0.5), 
+      Math.floor(16 * scaleY)
+    ].filter(y => y >= 1 && y < gridHeight - 1);
+    
     corridors.forEach(y => {
-      for (let x = 1; x < GRID_WIDTH - 1; x++) {
+      for (let x = 1; x < gridWidth - 1; x++) {
         // Leave some gaps for interesting pathfinding
-        if (x % 7 !== 0 || Math.random() > 0.3) {
+        const gapFreq = Math.max(5, Math.floor(7 * scaleX));
+        if (x % gapFreq !== 0 || Math.random() > 0.3) {
           newGrid[y][x] = CellType.PATH;
         }
       }
     });
 
-    // Create guaranteed vertical corridors
-    const verticalCorridors = [7, 14, 21, 28];
+    // Create guaranteed vertical corridors (scaled)
+    const verticalCorridors = [
+      Math.floor(7 * scaleX), 
+      Math.floor(14 * scaleX), 
+      Math.floor(21 * scaleX), 
+      Math.floor(28 * scaleX)
+    ].filter(x => x >= 1 && x < gridWidth - 1);
+    
     verticalCorridors.forEach(x => {
-      for (let y = 1; y < GRID_HEIGHT - 1; y++) {
-        if (y % 5 !== 0 || Math.random() > 0.4) {
+      for (let y = 1; y < gridHeight - 1; y++) {
+        const gapFreq = Math.max(3, Math.floor(5 * scaleY));
+        if (y % gapFreq !== 0 || Math.random() > 0.4) {
           newGrid[y][x] = CellType.PATH;
         }
       }
@@ -128,14 +191,14 @@ const GamePathfinder: React.FC = () => {
 
     // Set spawn points
     spawnPoints.forEach(pos => {
-      if (pos.y >= 0 && pos.y < GRID_HEIGHT && pos.x >= 0 && pos.x < GRID_WIDTH) {
+      if (pos.y >= 0 && pos.y < gridHeight && pos.x >= 0 && pos.x < gridWidth) {
         newGrid[pos.y][pos.x] = CellType.SPAWN;
         // Ensure spawn points are connected
         for (let dx = -1; dx <= 1; dx++) {
           for (let dy = -1; dy <= 1; dy++) {
             const newX = pos.x + dx;
             const newY = pos.y + dy;
-            if (newX >= 1 && newX < GRID_WIDTH - 1 && newY >= 1 && newY < GRID_HEIGHT - 1) {
+            if (newX >= 1 && newX < gridWidth - 1 && newY >= 1 && newY < gridHeight - 1) {
               if (Math.abs(dx) + Math.abs(dy) === 1) { // Only adjacent cells, not diagonals
                 newGrid[newY][newX] = CellType.PATH;
               }
@@ -146,14 +209,14 @@ const GamePathfinder: React.FC = () => {
     });
 
     // Set target
-    if (targetPoint.y >= 0 && targetPoint.y < GRID_HEIGHT && targetPoint.x >= 0 && targetPoint.x < GRID_WIDTH) {
+    if (targetPoint.y >= 0 && targetPoint.y < gridHeight && targetPoint.x >= 0 && targetPoint.x < gridWidth) {
       newGrid[targetPoint.y][targetPoint.x] = CellType.TARGET;
       // Ensure target is accessible
       for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
           const newX = targetPoint.x + dx;
           const newY = targetPoint.y + dy;
-          if (newX >= 1 && newX < GRID_WIDTH - 1 && newY >= 1 && newY < GRID_HEIGHT - 1) {
+          if (newX >= 1 && newX < gridWidth - 1 && newY >= 1 && newY < gridHeight - 1) {
             if (Math.abs(dx) + Math.abs(dy) === 1) { // Only adjacent cells, not diagonals
               newGrid[newY][newX] = CellType.PATH;
             }
@@ -163,7 +226,7 @@ const GamePathfinder: React.FC = () => {
     }
 
     setGrid(newGrid);
-  }, [spawnPoints, targetPoint]);
+  }, [spawnPoints, targetPoint, gridWidth, gridHeight]);
 
   // Initialize cars
   const initializeCars = useCallback((algorithmToUse?: Algorithm) => {
@@ -181,8 +244,8 @@ const GamePathfinder: React.FC = () => {
       const pathfinder = getPathfindingFunction(currentAlgorithm);
       const path = pathfinder(spawnPoint, targetPoint, {
         grid,
-        gridWidth: GRID_WIDTH,
-        gridHeight: GRID_HEIGHT
+        gridWidth: gridWidth,
+        gridHeight: gridHeight
       });
       
       newCars.push({
@@ -198,7 +261,7 @@ const GamePathfinder: React.FC = () => {
 
     setCars(newCars);
     carsRef.current = newCars;
-  }, [spawnPoints, targetPoint, algorithm, grid]);
+  }, [spawnPoints, targetPoint, algorithm, grid, gridWidth, gridHeight]);
 
   // Animation loop
   const animate = useCallback(() => {
@@ -212,8 +275,8 @@ const GamePathfinder: React.FC = () => {
           const spawnPoint = spawnPoints[car.id % spawnPoints.length];
           const newPath = pathfinder(spawnPoint, targetPoint, {
             grid,
-            gridWidth: GRID_WIDTH,
-            gridHeight: GRID_HEIGHT
+            gridWidth: gridWidth,
+            gridHeight: gridHeight
           });
           
           return {
@@ -246,12 +309,30 @@ const GamePathfinder: React.FC = () => {
     if (isRunning && isMountedRef.current && isGameActive) {
       animationRef.current = setTimeout(animate, ANIMATION_SPEED);
     }
-  }, [isRunning, algorithm, spawnPoints, targetPoint, grid, isGameActive]);
+  }, [isRunning, algorithm, spawnPoints, targetPoint, grid, isGameActive, gridWidth, gridHeight]);
 
-  // Initialize grid on mount
+  // Initialize grid on mount and when dimensions change
   useEffect(() => {
     initializeGrid();
   }, [initializeGrid]);
+
+  // Set up resize observer to handle dynamic sizing
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(() => {
+      calculateOptimalDimensions();
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Initial calculation
+    calculateOptimalDimensions();
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [calculateOptimalDimensions]);
 
   // Initialize cars when grid changes or algorithm changes
   useEffect(() => {
@@ -360,15 +441,29 @@ const GamePathfinder: React.FC = () => {
   };
 
   return (
-    <Box sx={{ 
-      p: 2, 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center',
-      width: '100%'
-    }}>
+    <Box 
+      ref={containerRef}
+      sx={{ 
+        p: { xs: 0.5, sm: 1 }, // Reduced padding
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+        minHeight: 0, // Allow shrinking
+        overflow: 'hidden',
+        maxHeight: '90vh' // Prevent taking full screen height
+      }}>
       {/* Controls */}
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <Box sx={{ 
+        mb: { xs: 0.5, sm: 1 }, // Reduced margin
+        display: 'flex', 
+        gap: { xs: 0.5, sm: 1 }, // Reduced gap
+        alignItems: 'center', 
+        flexWrap: 'wrap', 
+        justifyContent: 'center',
+        flexShrink: 0
+      }}>
         <Button
           variant="contained"
           onClick={togglePlayPause}
@@ -426,22 +521,40 @@ const GamePathfinder: React.FC = () => {
         />
       </Box>
 
-      {/* Game Grid */}
-      <Box
-        sx={{
-          display: 'inline-block',
-          border: `3px solid ${palette.border}`,
-          borderRadius: '8px',
-          backgroundColor: '#1a1a1a',
-          padding: '8px',
-          position: 'relative'
-        }}
-      >
+      {/* Main Game Area */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', lg: 'row' },
+        gap: { xs: 1, sm: 1.5 }, // Reduced gap
+        alignItems: { xs: 'center', lg: 'flex-start' }, 
+        justifyContent: 'center',
+        width: '100%',
+        maxWidth: '100%',
+        flex: 1,
+        minHeight: 0,
+        overflow: 'auto' // Allow scrolling if needed
+      }}>
+        {/* Game Grid */}
+        <Box
+          sx={{
+            display: 'inline-block',
+            border: `2px solid ${palette.border}`,
+            borderRadius: '6px', // Slightly smaller radius
+            backgroundColor: '#1a1a1a',
+            padding: { xs: '2px', sm: '4px' }, // Reduced padding
+            position: 'relative',
+            flexShrink: 1,
+            minWidth: 0,
+            maxWidth: '100%',
+            maxHeight: '60vh', // Limit height to prevent overflow
+            overflow: 'auto' // Add scrollbar if content overflows
+          }}
+        >
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${GRID_WIDTH}, ${CELL_SIZE}px)`,
-            gridTemplateRows: `repeat(${GRID_HEIGHT}, ${CELL_SIZE}px)`,
+            gridTemplateColumns: `repeat(${gridWidth}, ${cellSize}px)`,
+            gridTemplateRows: `repeat(${gridHeight}, ${cellSize}px)`,
             gap: '1px',
             position: 'relative'
           }}
@@ -452,8 +565,8 @@ const GamePathfinder: React.FC = () => {
               <Box
                 key={`${x}-${y}`}
                 sx={{
-                  width: CELL_SIZE,
-                  height: CELL_SIZE,
+                  width: cellSize,
+                  height: cellSize,
                   backgroundColor: getCellColor(cell),
                   border: getCellBorder(cell),
                   position: 'relative',
@@ -485,10 +598,10 @@ const GamePathfinder: React.FC = () => {
               key={car.id}
               sx={{
                 position: 'absolute',
-                left: car.position.x * (CELL_SIZE + 1) + 2,
-                top: car.position.y * (CELL_SIZE + 1) + 2,
-                width: CELL_SIZE - 4,
-                height: CELL_SIZE - 4,
+                left: car.position.x * (cellSize + 1) + 2,
+                top: car.position.y * (cellSize + 1) + 2,
+                width: cellSize - 4,
+                height: cellSize - 4,
                 backgroundColor: car.color,
                 borderRadius: '50%',
                 border: '2px solid #fff',
@@ -505,8 +618,8 @@ const GamePathfinder: React.FC = () => {
                 key={`${car.id}-path-${index}`}
                 sx={{
                   position: 'absolute',
-                  left: pos.x * (CELL_SIZE + 1) + CELL_SIZE / 2 - 1,
-                  top: pos.y * (CELL_SIZE + 1) + CELL_SIZE / 2 - 1,
+                  left: pos.x * (cellSize + 1) + cellSize / 2 - 1,
+                  top: pos.y * (cellSize + 1) + cellSize / 2 - 1,
                   width: 2,
                   height: 2,
                   backgroundColor: car.color + '60',
@@ -519,51 +632,105 @@ const GamePathfinder: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Path Information */}
-      <Box sx={{ mt: 2, textAlign: 'center', maxWidth: '600px' }}>
-        <Typography sx={{ color: palette.text, fontSize: '16px', fontWeight: 'bold', mb: 1 }}>
-          Car Paths ({algorithm} Algorithm)
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
-          {cars.map(car => (
-            <Box key={car.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box
-                sx={{
-                  width: 12,
-                  height: 12,
-                  backgroundColor: car.color,
-                  borderRadius: '50%',
-                  border: '1px solid #fff'
-                }}
-              />
-              <Typography sx={{ color: palette.text, fontSize: '12px' }}>
-                {car.path.length > 0 ? `${car.path.length} steps` : 'No path'}
-              </Typography>
+        {/* Information Panel */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'row', lg: 'column' },
+          flexWrap: { xs: 'wrap', lg: 'nowrap' },
+          gap: { xs: 0.5, sm: 1 }, // Reduced gap
+          minWidth: { xs: '100%', lg: '220px' }, // Reduced min width
+          maxWidth: { xs: '100%', lg: '260px' }, // Reduced max width
+          maxHeight: { lg: '60vh' }, // Limit height on large screens
+          overflow: { lg: 'auto' }, // Add scrollbar on large screens when needed
+          flexShrink: 0
+        }}>
+          {/* Path Information */}
+          <Box sx={{ 
+            p: { xs: 1, sm: 1.5 }, // Reduced padding
+            border: `1px solid ${palette.border}`,
+            borderRadius: '6px', // Smaller radius
+            backgroundColor: palette.background + '40',
+            flex: { xs: '1 1 250px', lg: 'none' }, // Reduced flex basis
+            minWidth: { xs: '200px', lg: 'auto' } // Reduced min width
+          }}>
+            <Typography sx={{ color: palette.text, fontSize: { xs: '11px', sm: '13px' }, fontWeight: 'bold', mb: 1 }}> 
+              Car Paths ({algorithm})
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}> {/* Reduced gap */}
+              {cars.map(car => (
+                <Box key={car.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 12,
+                      height: 12,
+                      backgroundColor: car.color,
+                      borderRadius: '50%',
+                      border: '1px solid #fff',
+                      flexShrink: 0
+                    }}
+                  />
+                  <Typography sx={{ color: palette.text, fontSize: { xs: '10px', sm: '12px' } }}>
+                    Car {car.id + 1}: {car.path.length > 0 ? `${car.path.length} steps` : 'No path'}
+                  </Typography>
+                </Box>
+              ))}
             </Box>
-          ))}
-        </Box>
-      </Box>
+          </Box>
 
-      {/* Development Note */}
-      <Box sx={{
-        p: { xs: 1.5, md: 2 },
-        border: `1px solid ${palette.border}`,
-        borderRadius: '8px',
-        backgroundColor: palette.background + '40',
-        textAlign: 'center',
-        mt: { xs: 2, md: 3 },
-        maxWidth: '600px'
-      }}>
-        <Typography 
-          variant="caption" 
-          sx={{ 
-            color: palette.text + '80',
-            fontFamily: 'monospace',
-            fontSize: { xs: '0.7rem', md: '0.8rem' }
-          }}
-        >
-          🎨 Attempted to swap Boxes for 2D tilesheets with GPT-4o and Claude Sonnet 3.5, but even with semi-manual collaboration, the models struggled with the visual transformation. Planning to revisit this challenge in the future!
-        </Typography>
+          {/* Legend */}
+          <Box sx={{ 
+            p: { xs: 1, sm: 1.5 }, // Reduced padding
+            border: `1px solid ${palette.border}`,
+            borderRadius: '6px', // Smaller radius
+            backgroundColor: palette.background + '40',
+            flex: { xs: '1 1 200px', lg: 'none' }, // Reduced flex basis
+            minWidth: { xs: '180px', lg: 'auto' } // Reduced min width
+          }}>
+            <Typography sx={{ color: palette.text, fontSize: { xs: '11px', sm: '13px' }, fontWeight: 'bold', mb: 1 }}>
+              Legend
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}> {/* Reduced gap */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 12, height: 12, backgroundColor: palette.primary + '80', border: `1px solid ${palette.primary}` }} />
+                <Typography sx={{ color: palette.text, fontSize: { xs: '10px', sm: '12px' } }}>Spawn (S)</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 12, height: 12, backgroundColor: palette.secondary + '80', border: `1px solid ${palette.secondary}` }} />
+                <Typography sx={{ color: palette.text, fontSize: { xs: '10px', sm: '12px' } }}>Target (T)</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 12, height: 12, backgroundColor: '#4a4a4a', border: '1px solid #666' }} />
+                <Typography sx={{ color: palette.text, fontSize: { xs: '10px', sm: '12px' } }}>Walls</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 12, height: 12, backgroundColor: '#1a1a1a', border: '1px solid #333' }} />
+                <Typography sx={{ color: palette.text, fontSize: { xs: '10px', sm: '12px' } }}>Paths</Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Development Note */}
+          <Box sx={{
+            p: { xs: 1, sm: 1.5 }, // Reduced padding
+            border: `1px solid ${palette.border}`,
+            borderRadius: '6px', // Smaller radius
+            backgroundColor: palette.background + '40',
+            flex: { xs: '1 1 100%', lg: 'none' },
+            minWidth: { xs: '100%', lg: 'auto' }
+          }}>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: palette.text + '80',
+                fontFamily: 'monospace',
+                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                lineHeight: 1.4
+              }}
+            >
+              🎨 Attempted to swap Boxes for 2D tilesheets with GPT-4o and Claude Sonnet 3.5, but even with semi-manual collaboration, the models struggled with the visual transformation. Planning to revisit this challenge in the future!
+            </Typography>
+          </Box>
+        </Box>
       </Box>
     </Box>
   );

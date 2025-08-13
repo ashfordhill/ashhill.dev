@@ -112,7 +112,7 @@ const SimpleMusicPlayer: React.FC = () => {
     }
   }, [currentTrackIndex, playlist.length]);
 
-  // Optimized play/pause with loading state
+  // Optimized play/pause with loading state and better error handling
   const togglePlay = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -126,17 +126,24 @@ const SimpleMusicPlayer: React.FC = () => {
       } else {
         setIsLoading(true);
         
+        // Force reload the audio if it seems corrupted or not ready
+        if (audio.readyState === 0 || audio.error) {
+          console.log('Reloading audio due to readyState:', audio.readyState, 'or error:', audio.error);
+          audio.load();
+        }
+        
         // Ensure audio is ready to play
         if (audio.readyState < 2) { // HAVE_CURRENT_DATA
           // Wait for audio to be ready
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
               reject(new Error('Audio loading timeout'));
-            }, 5000);
+            }, 8000); // Increased timeout
 
             const onCanPlay = () => {
               clearTimeout(timeout);
               audio.removeEventListener('canplay', onCanPlay);
+              audio.removeEventListener('loadeddata', onCanPlay);
               audio.removeEventListener('error', onError);
               resolve(undefined);
             };
@@ -144,25 +151,37 @@ const SimpleMusicPlayer: React.FC = () => {
             const onError = (e: any) => {
               clearTimeout(timeout);
               audio.removeEventListener('canplay', onCanPlay);
+              audio.removeEventListener('loadeddata', onCanPlay);
               audio.removeEventListener('error', onError);
               reject(e);
             };
 
             audio.addEventListener('canplay', onCanPlay);
+            audio.addEventListener('loadeddata', onCanPlay);
             audio.addEventListener('error', onError);
           });
         }
 
-        await audio.play();
-        setIsPlaying(true);
-        wasPlayingRef.current = true;
-        setIsLoading(false);
+        // Additional check before playing
+        if (audio.paused && audio.readyState >= 2) {
+          await audio.play();
+          setIsPlaying(true);
+          wasPlayingRef.current = true;
+          setIsLoading(false);
+        } else {
+          throw new Error('Audio not ready to play');
+        }
       }
     } catch (error) {
       console.error('Play failed:', error);
       setIsPlaying(false);
       wasPlayingRef.current = false;
       setIsLoading(false);
+      
+      // Try to reload the audio element as a last resort
+      if (audio) {
+        audio.load();
+      }
     }
   }, [isPlaying]);
 
@@ -286,7 +305,7 @@ const SimpleMusicPlayer: React.FC = () => {
     }
   }, []); // Only run once on mount
 
-  // Pause music when leaving the music section
+  // Handle section changes and tab visibility
   useEffect(() => {
     if (!isMusicActive && isPlaying) {
       wasPlayingRef.current = true; // Remember we were playing
@@ -296,6 +315,54 @@ const SimpleMusicPlayer: React.FC = () => {
       }
     }
   }, [isMusicActive, isPlaying]);
+
+  // Handle page visibility changes (tab switching)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      if (document.hidden) {
+        // Page is hidden (tab switched away)
+        if (isPlaying) {
+          wasPlayingRef.current = true;
+          audio.pause();
+          setIsPlaying(false);
+        }
+      } else {
+        // Page is visible again (tab switched back)
+        if (wasPlayingRef.current && isMusicActive) {
+          // Small delay to ensure everything is ready
+          setTimeout(() => {
+            if (audio.readyState >= 2) {
+              audio.play().then(() => {
+                setIsPlaying(true);
+              }).catch((error) => {
+                console.error('Resume play failed:', error);
+                // Force reload and try again
+                audio.load();
+                setTimeout(() => {
+                  audio.play().then(() => {
+                    setIsPlaying(true);
+                  }).catch((e) => {
+                    console.error('Second attempt failed:', e);
+                  });
+                }, 500);
+              });
+            } else {
+              // Audio not ready, reload it
+              audio.load();
+            }
+          }, 200);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPlaying, isMusicActive]);
 
   if (!palette) {
     return (
