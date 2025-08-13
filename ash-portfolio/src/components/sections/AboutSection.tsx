@@ -335,7 +335,31 @@ const AboutSection: React.FC = () => {
             alignItems: { xs: 'center', lg: 'stretch' },
             minWidth: { lg: '200px' },
             maxWidth: { lg: '200px' },
-            flexShrink: 0
+            maxHeight: { xs: '150px', sm: '200px', lg: '100%' },
+            overflow: 'auto',
+            flexShrink: 0,
+            // Custom cute scrollbar styling ✨
+            '&::-webkit-scrollbar': {
+              width: '12px',
+              height: '12px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: palette.background + '40',
+              borderRadius: '10px',
+              border: `1px solid ${palette.border}30`,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: `linear-gradient(45deg, ${palette.primary}80, ${palette.accent}80)`,
+              borderRadius: '10px',
+              border: `2px solid ${palette.background}`,
+              boxShadow: `0 0 8px ${palette.primary}40`,
+              transition: 'all 0.3s ease',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: `linear-gradient(45deg, ${palette.primary}, ${palette.accent})`,
+              boxShadow: `0 0 12px ${palette.primary}60`,
+              transform: 'scale(1.05)',
+            }
           }}>
             {commands.map((cmd, index) => (
               <Button
