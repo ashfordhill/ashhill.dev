@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import { useAppSelector } from '../store/hooks';
 import AboutSection from './sections/AboutSection';
+import LLMDramaSection from './sections/LLMDramaSection';
 import FunSection from './sections/FunSection';
 import CicdDashboardSection from './sections/CicdDashboardSection';
 import SimpleMusicPlayer from './sections/SimpleMusicPlayer';
@@ -62,6 +63,8 @@ const MainContent: React.FC = () => {
     switch (currentSection) {
       case 'about':
         return <AboutSection key={`about-${Date.now()}`} />;
+      case 'llm-drama':
+        return <LLMDramaSection key={`llm-drama-${Date.now()}`} />;
       case 'fun':
         return <FunSection key={`fun-${Date.now()}`} />;
       case 'cicd':

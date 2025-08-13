@@ -708,29 +708,34 @@ const GamePathfinder: React.FC = () => {
               </Box>
             </Box>
           </Box>
-
-          {/* Development Note */}
-          <Box sx={{
-            p: { xs: 1, sm: 1.5 }, // Reduced padding
-            border: `1px solid ${palette.border}`,
-            borderRadius: '6px', // Smaller radius
-            backgroundColor: palette.background + '40',
-            flex: { xs: '1 1 100%', lg: 'none' },
-            minWidth: { xs: '100%', lg: 'auto' }
-          }}>
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                color: palette.text + '80',
-                fontFamily: 'monospace',
-                fontSize: { xs: '0.65rem', sm: '0.75rem' },
-                lineHeight: 1.4
-              }}
-            >
-              🎨 Attempted to swap Boxes for 2D tilesheets with GPT-4o and Claude Sonnet 3.5, but even with semi-manual collaboration, the models struggled with the visual transformation. Planning to revisit this challenge in the future!
-            </Typography>
-          </Box>
         </Box>
+      </Box>
+      {/* Horizontal Development Note (moved out of side panel) */}
+      <Box
+        sx={{
+          mt: 1,
+          width: '100%',
+          borderTop: `1px solid ${palette.border}40`,
+          background: `linear-gradient(90deg, ${palette.background}80, ${palette.primary}10 40%, ${palette.secondary}10 100%)`,
+          p: { xs: 1, sm: 1.25 },
+          display: 'flex',
+          justifyContent: 'center'
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            maxWidth: 900,
+            color: palette.text + '99',
+            fontFamily: 'monospace',
+            fontSize: { xs: '0.62rem', sm: '0.7rem' },
+            lineHeight: 1.35,
+            letterSpacing: 0.25,
+            textAlign: 'center'
+          }}
+        >
+          🎨 Experiment log: Tried swapping grid Boxes with third party tilesheet sprites (Kenney.nl) with GPT‑4o & Claude Sonnet 3.5. Even with iterative prompts + manual tweaks the scene graph + sprite atlas math kept drifting. Leaving this version performant & readable for now; will revisit with a focused rendering pass.
+        </Typography>
       </Box>
     </Box>
   );
