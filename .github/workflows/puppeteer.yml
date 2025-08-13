@@ -46,6 +46,7 @@ jobs:
           gif_name: 'timeline.gif'
           frame_duration: '2'   # seconds per frame (1 = 1 fps). Use 0.083 for ~12 fps.
           scale_width: '640'
+          auto_screenshots: 'false'
 
       - name: Commit visual records
         working-directory: ./ash-portfolio

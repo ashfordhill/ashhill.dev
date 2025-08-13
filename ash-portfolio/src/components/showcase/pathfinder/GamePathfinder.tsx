@@ -543,6 +543,28 @@ const GamePathfinder: React.FC = () => {
           ))}
         </Box>
       </Box>
+
+      {/* Development Note */}
+      <Box sx={{
+        p: { xs: 1.5, md: 2 },
+        border: `1px solid ${palette.border}`,
+        borderRadius: '8px',
+        backgroundColor: palette.background + '40',
+        textAlign: 'center',
+        mt: { xs: 2, md: 3 },
+        maxWidth: '600px'
+      }}>
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            color: palette.text + '80',
+            fontFamily: 'monospace',
+            fontSize: { xs: '0.7rem', md: '0.8rem' }
+          }}
+        >
+          🎨 Attempted to swap Boxes for 2D tilesheets with GPT-4o and Claude Sonnet 3.5, but even with semi-manual collaboration, the models struggled with the visual transformation. Planning to revisit this challenge in the future!
+        </Typography>
+      </Box>
     </Box>
   );
 };
