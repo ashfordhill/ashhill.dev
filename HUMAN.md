@@ -9,11 +9,16 @@ Notes written by a human being in regard to using generative coding tools.
     - Also, helps with being able to commit 'good' code from 1 agent working on 1 feature, and discard or wait on committing changes from another agent working on another feature that may not ready to be committed.
   - Once using generative code, it's unlikely manual coding will happen often. A certain level of understanding needs to happen for when issues arise. 
 - Mix use of LLMs. Some do better with certain types of coding tasks than other (UI vs backend, testing, large changes vs small tweaks, bugfixes, etc.)
+- Use one LLM to come up with a thorough high-level design and then feed all of the detailed instructions to another LLM. This might be more efficient for describing a lot of details for a larger-scale scope than what a human could reasonably do.
 
 ## Which Models, which Tools?
 
-### Current Favorite
+### Favorite LLM History
 
+**8/16/2025**
+Dunno if I even have a favorite at this point. GPT 5 seems good for design/high-level/'right brain' but I prefer Sonnet 4 parallel thinking for execution and implementation. Unfortunately this is more resource intensive and not as easily/freely accessible atm.
+
+**8/1/2025**
 Copilot Chat with Claude Sonnet 4 has been doing well. Curious to know where this ones strengths/weaknesses are compared to the Zencoder blended model.
 
 ### Zencoder with VS Code
