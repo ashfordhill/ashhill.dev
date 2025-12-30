@@ -54,6 +54,8 @@ jobs:
       - name: Take visual records
         id: capture
         uses: ashfordhill/puppeteer-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         with:
           url: 'http://localhost:3000'
           folder: '${{ vars.ACTIVE_VERSION }}/timeline'
