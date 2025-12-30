@@ -1,24 +1,38 @@
-# Status
+# ashhill.dev
 
-Using my [Puppeteer GitHub Action](https://github.com/ashfordhill/puppeteer-action).
+Portfolio website with multiple versions.
 
-Experimenting with Zencoder.
+## Active Version
 
-### Latest View
+**Currently Deployed: v1**
 
-![](./timeline/screenshot-latest.png)
+The active version is controlled by the `ACTIVE_VERSION` GitHub variable (currently set to `v1`).
 
-### History
+## Versions
 
-![](./timeline/timeline.gif)
+- **[v1](./v1/README.md)** - Original portfolio site with pathfinding visualizer
+- **[v2](./v2/)** - New version (in development)
 
-### Installation
+## Setup
 
-Use pnpm locally to cache `node_modules` for cache'd node package installs:
+To work on a specific version, navigate to its directory:
 
-``` sh
-npm i -g pnpm
-cd ash-portfolio
+```sh
+cd v1  # or v2
 pnpm i
 npm run dev
 ```
+
+## Switching Active Version
+
+To change which version is deployed and screenshotted:
+
+1. Go to repository **Settings** → **Secrets and variables** → **Actions** → **Variables**
+2. Update the `ACTIVE_VERSION` variable to `v1` or `v2`
+3. The next push will trigger the workflow with the new version
+
+## Cloudflare Pages Deployment
+
+Update your Cloudflare Pages build settings to match the active version:
+- **Build directory**: `v1` (or current active version)
+- **Output directory**: `v1/out` (or current active version + `/out`)

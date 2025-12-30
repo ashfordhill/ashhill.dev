@@ -31,24 +31,24 @@ jobs:
           # See here for caching with `yarn`, `bun` or other package managers https://github.com/actions/cache/blob/main/examples.md or you can leverage caching with actions/setup-node https://github.com/actions/setup-node
           path: |
             ~/.pnpm-store
-            ${{ github.workspace }}/ash-portfolio/.next/cache
+            ${{ github.workspace }}/${{ vars.ACTIVE_VERSION }}/.next/cache
           # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('ash-portfolio/pnpm-lock.yaml') }}-${{ hashFiles('ash-portfolio/**/*.js', 'ash-portfolio/**/*.jsx', 'ash-portfolio/**/*.ts', 'ash-portfolio/**/*.tsx') }}
+          key: ${{ runner.os }}-nextjs-${{ hashFiles(format('{0}/pnpm-lock.yaml', vars.ACTIVE_VERSION)) }}-${{ hashFiles(format('{0}/**/*.js', vars.ACTIVE_VERSION), format('{0}/**/*.jsx', vars.ACTIVE_VERSION), format('{0}/**/*.ts', vars.ACTIVE_VERSION), format('{0}/**/*.tsx', vars.ACTIVE_VERSION)) }}
           # If source files changed but packages didn't, rebuild from a prior cache.
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('ash-portfolio/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles(format('{0}/pnpm-lock.yaml', vars.ACTIVE_VERSION)) }}-
       
       - name: Install dependencies
-        working-directory: ./ash-portfolio
+        working-directory: ./${{ vars.ACTIVE_VERSION }}
         run: |
           pnpm install
             
       - name: Build Next.js app
-        working-directory: ./ash-portfolio
+        working-directory: ./${{ vars.ACTIVE_VERSION }}
         run: pnpm run build
 
       - name: Start Next.js app
-        working-directory: ./ash-portfolio
+        working-directory: ./${{ vars.ACTIVE_VERSION }}
         run: pnpm run start &
 
       - name: Take visual records
@@ -56,7 +56,7 @@ jobs:
         uses: ashfordhill/puppeteer-action@main
         with:
           url: 'http://localhost:3000'
-          folder: 'timeline'
+          folder: '${{ vars.ACTIVE_VERSION }}/timeline'
           basename: 'screenshot'
           make_gif: 'true'
           gif_name: 'timeline.gif'
@@ -65,7 +65,7 @@ jobs:
           auto_screenshots: 'false'
 
       - name: Commit visual records
-        working-directory: ./ash-portfolio
+        working-directory: ./${{ vars.ACTIVE_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
