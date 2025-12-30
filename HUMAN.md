@@ -13,6 +13,7 @@ Notes written by a human being in regard to using generative coding tools.
 
 ## Which Models, which Tools?
 
+
 ### Favorite LLM History
 
 **8/16/2025**
