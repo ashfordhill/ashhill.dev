@@ -59,7 +59,7 @@ jobs:
         id: capture
         uses: ashfordhill/puppeteer-action@main
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           url: 'http://localhost:3000'
           folder: '${{ steps.version.outputs.active }}/timeline'
@@ -68,7 +68,7 @@ jobs:
           gif_name: 'timeline.gif'
           frame_duration: '2'   # seconds per frame (1 = 1 fps). Use 0.083 for ~12 fps.
           scale_width: '640'
-          auto_screenshots: 'false'
+          auto_screenshots: 'true'
 
       - name: Commit visual records
         working-directory: ./${{ steps.version.outputs.active }}
