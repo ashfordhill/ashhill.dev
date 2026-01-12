@@ -24,7 +24,7 @@ function copyRecursive(src, dest) {
   }
 }
 
-['index.html', 'style.css', 'script.js'].forEach(file => {
+['index.html', 'style.css', 'script.js', 'favicon.ico'].forEach(file => {
   fs.copyFileSync(path.join(__dirname, file), path.join(outDir, file));
 });
 
