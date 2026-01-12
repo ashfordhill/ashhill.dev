@@ -2,7 +2,8 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const activeVersion = process.env.ACTIVE_VERSION || 'v1';
+const versionConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json'), 'utf8'));
+const activeVersion = process.env.ACTIVE_VERSION || versionConfig.active;
 
 console.log(`Building version: ${activeVersion}`);
 

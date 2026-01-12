@@ -15,6 +15,10 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Read version config
+        id: version
+        run: echo "active=$(jq -r .active version.json)" >> $GITHUB_OUTPUT
+      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -31,24 +35,24 @@ jobs:
           # See here for caching with `yarn`, `bun` or other package managers https://github.com/actions/cache/blob/main/examples.md or you can leverage caching with actions/setup-node https://github.com/actions/setup-node
           path: |
             ~/.pnpm-store
-            ${{ github.workspace }}/${{ vars.ACTIVE_VERSION }}/.next/cache
+            ${{ github.workspace }}/${{ steps.version.outputs.active }}/.next/cache
           # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles(format('{0}/pnpm-lock.yaml', vars.ACTIVE_VERSION)) }}-${{ hashFiles(format('{0}/**/*.js', vars.ACTIVE_VERSION), format('{0}/**/*.jsx', vars.ACTIVE_VERSION), format('{0}/**/*.ts', vars.ACTIVE_VERSION), format('{0}/**/*.tsx', vars.ACTIVE_VERSION)) }}
+          key: ${{ runner.os }}-nextjs-${{ hashFiles(format('{0}/pnpm-lock.yaml', steps.version.outputs.active)) }}-${{ hashFiles(format('{0}/**/*.js', steps.version.outputs.active), format('{0}/**/*.jsx', steps.version.outputs.active), format('{0}/**/*.ts', steps.version.outputs.active), format('{0}/**/*.tsx', steps.version.outputs.active)) }}
           # If source files changed but packages didn't, rebuild from a prior cache.
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles(format('{0}/pnpm-lock.yaml', vars.ACTIVE_VERSION)) }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles(format('{0}/pnpm-lock.yaml', steps.version.outputs.active)) }}-
       
       - name: Install dependencies
-        working-directory: ./${{ vars.ACTIVE_VERSION }}
+        working-directory: ./${{ steps.version.outputs.active }}
         run: |
           pnpm install
             
       - name: Build Next.js app
-        working-directory: ./${{ vars.ACTIVE_VERSION }}
+        working-directory: ./${{ steps.version.outputs.active }}
         run: pnpm run build
 
       - name: Start Next.js app
-        working-directory: ./${{ vars.ACTIVE_VERSION }}
+        working-directory: ./${{ steps.version.outputs.active }}
         run: pnpm run start &
 
       - name: Take visual records
@@ -58,7 +62,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         with:
           url: 'http://localhost:3000'
-          folder: '${{ vars.ACTIVE_VERSION }}/timeline'
+          folder: '${{ steps.version.outputs.active }}/timeline'
           basename: 'screenshot'
           make_gif: 'true'
           gif_name: 'timeline.gif'
@@ -67,7 +71,7 @@ jobs:
           auto_screenshots: 'false'
 
       - name: Commit visual records
-        working-directory: ./${{ vars.ACTIVE_VERSION }}
+        working-directory: ./${{ steps.version.outputs.active }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
