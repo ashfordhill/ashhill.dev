@@ -1,0 +1,17 @@
+{
+  "name": "ashhill-v2",
+  "version": "1.0.0",
+  "description": "Artistic personal website inspired by Punpun and Basquiat",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "node build.js",
+    "start": "npx serve out"
+  },
+  "keywords": ["art", "portfolio", "experimental"],
+  "author": "ashhill",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

@@ -1,24 +1,21 @@
 # ashhill.dev
 
-Portfolio website with multiple versions.
+[Portfolio website](http://www.ashhill.dev) with multiple versions.
 
-## Active Version
+## Portfolio Version
 
-**Currently Deployed: v1**
-
-The active version is controlled by the `ACTIVE_VERSION` GitHub variable (currently set to `v1`).
+The active version is controlled by the `ACTIVE_VERSION` GitHub variable. Changing this and running the GitHub Actions workflow will deploy this version to the site.
 
 ## Versions
 
-- **[v1](./v1/README.md)** - Original portfolio site with pathfinding visualizer
-- **[v2](./v2/)** - New version (in development)
+- **[v1]** - Various widgets
+- **[v2]** - A game
 
 ## Setup
 
 To work on a specific version, navigate to its directory:
 
 ```sh
-cd v1  # or v2
 pnpm i
 npm run dev
 ```
