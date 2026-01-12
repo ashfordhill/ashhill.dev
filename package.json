@@ -1,0 +1,11 @@
+{
+  "name": "ashhill.dev",
+  "version": "1.0.0",
+  "description": "Portfolio website with version control",
+  "scripts": {
+    "build": "node build-cloudflare.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
